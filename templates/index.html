@@ -1,163 +1,203 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Quiz Question {{ current_index + 1 }}</title>
-    <style>
-        /* 簡單的樣式，用於突出顯示答案 */
-        .correct-text { color: green; font-weight: bold; }
-        .incorrect-text { color: red; }
-    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FastAPI Quiz</title>
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <h1>Question {{ current_index + 1 }} / {{ total_questions }}</h1>
-    
-    <h2>Word: <strong>{{ word }}</strong></h2>
 
-    <div id="quiz-form-container">
-        <form id="quiz-form">
-            <input type="hidden" name="word" value="{{ word }}">
+    <div class="progress-bar-container">
+        <div class="progress-bar" style="width: {{ ((current_index + 1) / total_questions) * 100 }}%;"></div>
+    </div>
+
+    <div class="main-content">
+        <h1>Which one of these is "{{ word }}"?</h1>
+        <p class="question-info">Question {{ current_index + 1 }} of {{ total_questions }}</p>
+
+        <form id="quiz-form" method="POST" action="/submit_answer">
             <input type="hidden" name="current_index" value="{{ current_index }}">
 
-            {% set is_correctly_answered = answer_record and answer_record.is_correct %}
-            
-            {% for option in options %}
-                <div>
-                    <input 
-                        type="radio" 
-                        id="option-{{ loop.index }}" 
-                        name="answer" 
-                        value="{{ option }}"
-                        data-option-value="{{ option }}"
-                        {% if answer_record and answer_record.user_answer == option %} 
-                            checked 
-                        {% endif %}
-                        
-                        {# 只有在已經正確回答時才禁用選項 #}
-                        {% if is_correctly_answered %} 
-                            disabled 
-                        {% endif %}
-                    >
-                    <label for="option-{{ loop.index }}">{{ option }}</label>
-                    
-                    {# 顯示作答標記 #}
-                    <span class="feedback-icon" id="feedback-{{ loop.index }}">
+            <div class="options-container" id="options-container">
+                {% for option in options %}
+                    {% set is_checked = answer_record and answer_record.user_answer == option %}
+                    <div class="option-item 
                         {% if answer_record %}
-                            {# 只有在嘗試過後才顯示 #}
-                            {% if answer_record.user_answer == option %}
-                                {% if answer_record.is_correct %}
-                                    <strong class="correct-text">(Your Correct Answer)</strong> 🟢
-                                {% else %}
-                                    <strong class="incorrect-text">(Your Incorrect Answer)</strong> 🔴
-                                {% endif %}
-                            {% elif option == correct_translation %}
-                                {# 顯示正確答案 (在回答錯誤或正確時) #}
-                                <strong class="correct-text"> (Correct) </strong> ✅
+                            {% if option == answer_record.correct_answer %}
+                                correct
+                            {% elif option == answer_record.user_answer and not answer_record.is_correct %}
+                                incorrect
                             {% endif %}
                         {% endif %}
-                    </span>
-                </div>
-            {% endfor %}
-
-            <br>
-            <button type="submit" id="submit-btn" 
-                {% if is_correctly_answered %} disabled {% endif %}
-            >
-                Submit Answer
-            </button>
-            <p id="submission-message" style="margin-top: 10px;"></p>
+                        ">
+                        <input 
+                            type="radio" 
+                            id="option-{{ loop.index }}" 
+                            name="answer" 
+                            value="{{ option }}"
+                            class="option-input"
+                            data-translation="{{ option }}"
+                            {% if is_checked %} checked {% endif %}
+                            {% if answer_record %} disabled {% endif %}
+                            >
+                        <label for="option-{{ loop.index }}">{{ option }}</label>
+                    </div>
+                {% endfor %}
+            </div>
+            
+            <div class="footer-action-buttons">
+                <button type="submit" id="submit-btn" class="btn btn-primary"
+                    {% if answer_record %} disabled {% endif %}
+                >
+                    Submit Answer
+                </button>
+            </div>
         </form>
     </div>
 
-    <div style="margin-top: 20px;">
-        {% if not is_first_question %}
-            <a href="/quiz/{{ current_index - 1 }}">
-                <button>⬅️ Previous</button>
-            </a>
-        {% endif %}
+    <div id="feedback-panel" class="feedback-panel" 
+        {% if not answer_record %} style="display: none;" {% endif %}
+        >
+        {% if answer_record %}
+            {% if answer_record.is_correct %}
+                <h3 class="correct-text">✅ Correct!</h3>
+            {% else %}
+                <h3 class="incorrect-text">❌ Incorrect.</h3>
+                <p>The correct answer is: **{{ answer_record.correct_answer }}**</p>
+            {% endif %}
 
-        {% if not is_last_question %}
-            <a href="/quiz/{{ current_index + 1 }}">
-                <button>Next ➡️</button>
-            </a>
-        {% else %}
-            <a href="/result">
-                <button>Finish Quiz 🎉</button>
-            </a>
+            <div class="navigation-controls">
+                {% if not is_first_question %}
+                    <a href="/quiz/{{ current_index - 1 }}" class="btn btn-secondary">Previous ⬅️</a>
+                {% endif %}
+
+                {% if not is_last_question %}
+                    <a href="/quiz/{{ current_index + 1 }}" id="next-btn" class="btn btn-primary">Next ➡️</a>
+                {% else %}
+                    <a href="/result" id="finish-btn" class="btn btn-success">Finish Quiz 🎉</a>
+                {% endif %}
+            </div>
+
         {% endif %}
     </div>
 
     <script>
-        document.getElementById('quiz-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const form = e.target;
-            const submitButton = document.getElementById('submit-btn');
-            const messageDisplay = document.getElementById('submission-message');
-            const radioInputs = document.querySelectorAll('input[name="answer"]');
+        const form = document.getElementById('quiz-form');
+        const submitButton = document.getElementById('submit-btn');
+        const optionsContainer = document.getElementById('options-container');
+        const feedbackPanel = document.getElementById('feedback-panel');
 
-            const selectedInput = document.querySelector('input[name="answer"]:checked');
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault(); // 阻止瀏覽器預設的表單提交
+            
+            // 檢查是否有選中選項
+            const selectedInput = form.querySelector('input[name="answer"]:checked');
             if (!selectedInput) {
-                alert('Please select an answer before submitting.');
+                alert("Please select an answer.");
                 return;
             }
 
-            const formData = new FormData(form);
-            const data = new URLSearchParams(formData).toString();
+            // 禁用按鈕防止重複點擊
+            submitButton.disabled = true;
 
+            const formData = new FormData(form);
+            
             try {
                 const response = await fetch('/submit_answer', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: data
+                    body: formData
                 });
 
-                const result = await response.json();
+                const data = await response.json();
 
                 if (response.ok) {
-                    // 1. 處理成功提交
-                    
-                    // 2. 禁用所有選項和提交按鈕
-                    submitButton.disabled = true;
+                    // 1. 禁用所有選項 (防止更改答案)
+                    const radioInputs = optionsContainer.querySelectorAll('input[type="radio"]');
                     radioInputs.forEach(input => input.disabled = true);
                     
-                    // 3. 顯示反饋訊息
-                    if (result.is_correct) {
-                        messageDisplay.className = 'correct-text';
-                        messageDisplay.textContent = '🎉 Correct! You can now move to the next question.';
-                    } else {
-                        messageDisplay.className = 'incorrect-text';
-                        messageDisplay.textContent = `❌ Incorrect. The correct answer was: ${result.correct_answer}.`;
-                    }
+                    // 2. 應用 CSS 樣式和視覺回饋
+                    applyFeedbackStyles(data, selectedInput.value);
 
-                    // 4. 標記選項 (使用 data-option-value 查找選項)
-                    radioInputs.forEach((input, index) => {
-                        const optionValue = input.getAttribute('data-option-value');
-                        const feedbackSpan = document.getElementById(`feedback-${index + 1}`);
-                        feedbackSpan.innerHTML = ''; // 清除現有的 Jinja2 標記 (如果有)
-
-                        if (optionValue === result.user_answer) {
-                            input.checked = true; // 確保選中的選項被標記
-                            if (result.is_correct) {
-                                feedbackSpan.innerHTML = '<strong class="correct-text">(Your Correct Answer)</strong> 🟢';
-                            } else {
-                                feedbackSpan.innerHTML = '<strong class="incorrect-text">(Your Incorrect Answer)</strong> 🔴';
-                            }
-                        } else if (optionValue === result.correct_answer) {
-                            feedbackSpan.innerHTML = '<strong class="correct-text"> (Correct) </strong> ✅';
-                        }
-                    });
+                    // 3. 顯示回饋面板和導航按鈕
+                    renderFeedbackPanel(data);
 
                 } else {
-                    // 處理服務器返回的錯誤 (例如，重複提交)
-                    messageDisplay.className = 'incorrect-text';
-                    messageDisplay.textContent = 'Error submitting answer: ' + (result.error || 'Server error.');
+                    // 如果伺服器返回錯誤 (例如: 已提交過答案), 重新啟用提交按鈕
+                    alert(data.error || "Submission failed.");
+                    submitButton.disabled = false;
                 }
+
             } catch (error) {
-                messageDisplay.className = 'incorrect-text';
-                messageDisplay.textContent = 'Network error: Could not connect to the server.';
-                console.error('Fetch error:', error);
+                console.error('Error submitting answer:', error);
+                alert('An unexpected error occurred.');
+                submitButton.disabled = false; // 出錯時重新啟用按鈕
             }
         });
+
+        // 函式: 根據提交結果更新樣式
+        function applyFeedbackStyles(record, userAnswer) {
+            const items = optionsContainer.querySelectorAll('.option-item');
+            
+            items.forEach(item => {
+                const input = item.querySelector('input');
+                const optionValue = input.value;
+
+                item.classList.remove('selected');
+
+                if (optionValue === record.correct_answer) {
+                    // 正確答案標記為綠色
+                    item.classList.add('correct');
+                } else if (optionValue === userAnswer && !record.is_correct) {
+                    // 錯誤答案標記為紅色
+                    item.classList.add('incorrect');
+                }
+            });
+        }
+
+        // 函式: 渲染回饋面板
+        function renderFeedbackPanel(record) {
+            let panelContent = '';
+            
+            if (record.is_correct) {
+                panelContent += '<h3 class="correct-text">✅ Correct!</h3>';
+            } else {
+                panelContent += '<h3 class="incorrect-text">❌ Incorrect.</h3>';
+                panelContent += `<p>The correct answer is: <strong>${record.correct_answer}</strong></p>`;
+            }
+
+            // 導航控制項
+            const currentIndex = parseInt(document.querySelector('input[name="current_index"]').value);
+            const totalQuestions = parseInt('{{ total_questions }}');
+
+            panelContent += '<div class="navigation-controls">';
+
+            // Previous Button
+            if (currentIndex > 0) {
+                panelContent += `<a href="/quiz/${currentIndex - 1}" class="btn btn-secondary">Previous ⬅️</a>`;
+            }
+
+            // Next/Finish Button
+            if (currentIndex < totalQuestions - 1) {
+                panelContent += `<a href="/quiz/${currentIndex + 1}" id="next-btn" class="btn btn-primary">Next ➡️</a>`;
+            } else {
+                panelContent += `<a href="/result" id="finish-btn" class="btn btn-success">Finish Quiz 🎉</a>`;
+            }
+
+            panelContent += '</div>';
+
+            feedbackPanel.innerHTML = panelContent;
+            feedbackPanel.style.display = 'block'; // 顯示回饋面板
+        }
+
+        // 頁面載入時，如果已有答案，確保啟用面板並禁用按鈕
+        window.onload = () => {
+             if ({{ 'true' if answer_record else 'false' }}) {
+                submitButton.disabled = true;
+                feedbackPanel.style.display = 'block';
+            }
+        };
+
     </script>
 </body>
 </html>
