@@ -1,6 +1,14 @@
 import pandas as pd
 import random
-from fastapi import FastAPI, Request, Form
+import uuid
+from fastapi import (
+    FastAPI,
+    Request,
+    Form,
+    Response,
+    Cookie,
+    Depends,
+)
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from typing import List, Dict, Optional, Any
@@ -18,8 +26,9 @@ TEST_SIZE = 15
 
 # Global storage for quiz data and session management.
 ALL_WORDS: List[Dict[str, str]] = []
+# Key is the unique session ID (from cookie), Value is the quiz state
 user_sessions: Dict[str, Dict] = {}
-SESSION_ID = "test_session"
+SESSION_COOKIE_NAME = "quiz_session_id"  # Define the cookie name
 
 
 # --- Core Logic Functions ---
@@ -60,6 +69,7 @@ def generate_options(
     if len(incorrect_translations) < 3:
         wrong_options = incorrect_translations
         while len(wrong_options) < 3:
+            # Append generic options if not enough real translations exist
             wrong_options.append(f"Option {len(wrong_options) + 1}")
     else:
         wrong_options = random.sample(incorrect_translations, 3)
@@ -88,6 +98,12 @@ def prepare_quiz_data(
     return prepared_questions
 
 
+# --- Dependency to retrieve session ID from cookie ---
+def get_session_id(session_id: Optional[str] = Cookie(None, alias=SESSION_COOKIE_NAME)):
+    """Retrieves the session ID from the cookie."""
+    return session_id
+
+
 # --- Application Startup Event ---
 @app.on_event("startup")
 async def startup_event():
@@ -98,33 +114,56 @@ async def startup_event():
 
 # --- Routes ---
 @app.get("/", response_class=RedirectResponse)
-async def start_quiz():
-    """Initializes the quiz session and redirects to the first question (index 0)."""
+async def start_quiz(
+    response: Response, session_id: Optional[str] = Depends(get_session_id)
+):
+    """
+    Initializes the quiz session, sets the cookie, and redirects.
+    If a valid cookie exists, just redirects to the quiz start.
+    """
     if not ALL_WORDS:
         return HTMLResponse("<h1>Error: Word database is empty.</h1>", status_code=500)
+
+    # Check if session is already active and valid
+    if session_id in user_sessions:
+        # If valid, redirect to the first question
+        return RedirectResponse(url="/quiz/0", status_code=302)
+
+    # --- New Session Initialization ---
+    new_session_id = str(uuid.uuid4())  # Generate a unique ID
 
     test_words = get_test_words()
     prepared_questions = prepare_quiz_data(test_words, ALL_WORDS)
 
-    # Initialize a new quiz session state
-    user_sessions[SESSION_ID] = {
+    # Initialize the new quiz session state
+    user_sessions[new_session_id] = {
         "prepared_questions": prepared_questions,
         "correct_count": 0,
         "total_questions": len(test_words),
         "answers": [],
     }
 
-    return RedirectResponse(url="/quiz/0", status_code=302)
+    # Set the session ID cookie on the response
+    response.set_cookie(
+        key=SESSION_COOKIE_NAME,
+        value=new_session_id,
+        httponly=True,  # Security measure: prevents client-side JS access
+        samesite="Lax",
+    )
+
+    # Redirect to the first question (index 0)
+    return RedirectResponse(url="/quiz/0", status_code=302, headers=response.headers)
 
 
 @app.get("/quiz/{index}", response_class=HTMLResponse)
 async def display_question(
-    request: Request,
-    index: int,
+    request: Request, index: int, session_id: str = Depends(get_session_id)
 ):
-    """Displays a specific question by index."""
-    session_data = user_sessions.get(SESSION_ID)
+    """Displays a specific question by index, requiring a valid session ID."""
 
+    session_data = user_sessions.get(session_id)
+
+    # Redirect to start if session is missing or invalid
     if not session_data:
         return RedirectResponse(url="/", status_code=302)
 
@@ -160,14 +199,18 @@ async def display_question(
 async def submit_answer(
     answer: str = Form(...),
     current_index: int = Form(...),
+    session_id: str = Depends(get_session_id),
 ):
-    """
-    Processes the user's AJAX answer, records the result, and returns JSON feedback.
-    """
-    session_data = user_sessions.get(SESSION_ID)
+    """Processes the user's AJAX answer using the session ID from the cookie."""
+
+    session_data = user_sessions.get(session_id)
 
     if not session_data or current_index >= session_data["total_questions"]:
-        return JSONResponse({"error": "Invalid session or index"}, status_code=400)
+        # Respond with 401 if session is invalid, instructing client to restart
+        return JSONResponse(
+            {"error": "Invalid session or index. Please restart the quiz."},
+            status_code=401,
+        )
 
     # Prevent re-submission
     if current_index < len(session_data["answers"]):
@@ -178,7 +221,7 @@ async def submit_answer(
     current_q_data = session_data["prepared_questions"][current_index]
     correct_translation = current_q_data["translation"]
 
-    # Get the word from session data (since it's not passed via Form)
+    # Get the word from session data
     word_from_session = current_q_data["word"]
 
     is_correct = answer == correct_translation
@@ -202,11 +245,13 @@ async def submit_answer(
 
 # --- Result Route ---
 @app.get("/result", response_class=HTMLResponse)
-async def show_result(request: Request):
-    """Displays the final quiz result page."""
-    session_data = user_sessions.get(SESSION_ID)
+async def show_result(request: Request, session_id: str = Depends(get_session_id)):
+    """Displays the final quiz result page, requiring a valid session ID."""
+
+    session_data = user_sessions.get(session_id)
 
     if not session_data:
+        # Redirect to start if session is missing
         return RedirectResponse(url="/", status_code=302)
 
     correct_count = session_data["correct_count"]
@@ -229,7 +274,14 @@ async def show_result(request: Request):
         "answers": session_data["answers"],
     }
 
-    return templates.TemplateResponse("result.html", context)
+    # Optional: Clear the session cookie and data after showing results (cleanup)
+    response = templates.TemplateResponse("result.html", context)
+    response.delete_cookie(SESSION_COOKIE_NAME)
+    # Remove data from global storage
+    if session_id in user_sessions:
+        del user_sessions[session_id]
+
+    return response
 
 
 # --- Run Application ---
