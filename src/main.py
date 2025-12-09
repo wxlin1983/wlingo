@@ -266,46 +266,48 @@ async def submit_answer(
     return JSONResponse(record)
 
 
-@app.get("/result", response_class=HTMLResponse)
-async def show_result(request: Request, session_id: str = Depends(get_session_id)):
-    """
-    Displays the final results page and clears the session.
-
-    If the quiz is not yet complete, it redirects the user to the last
-    unanswered question.
-    """
+# 1. NEW: API Endpoint to get result data (JSON)
+@app.get("/api/result", response_class=JSONResponse)
+async def get_result_data(session_id: str = Depends(get_session_id)):
     session_data = user_sessions.get(session_id)
-    if not session_data:
-        return RedirectResponse(url="/", status_code=302)
 
+    if not session_data:
+        return JSONResponse({"error": "Session invalid"}, status_code=401)
+
+    answers = session_data["answers"]
     total_questions = session_data["total_questions"]
 
-    # If quiz isn't finished, redirect to the next question.
-    if len(session_data["answers"]) < total_questions:
-        next_question_index = len(session_data["answers"])
-        return RedirectResponse(url=f"/quiz/{next_question_index}", status_code=302)
+    # Calculate score
+    correct_count = sum(1 for a in answers if a["is_correct"])
+    score_percentage = 0
+    if total_questions > 0:
+        score_percentage = round((correct_count / total_questions) * 100)
 
-    correct_count = session_data["correct_count"]
-    score_percentage = (
-        int((correct_count / total_questions) * 100) if total_questions > 0 else 0
-    )
-
-    context = {
-        "request": request,
+    return {
         "correct_count": correct_count,
         "total_questions": total_questions,
         "score_percentage": score_percentage,
-        "answers": session_data["answers"],
+        "answers": answers,
     }
 
-    # Clean up the session.
-    response = templates.TemplateResponse("result.html", context)
-    response.delete_cookie(SESSION_COOKIE_NAME)
+
+# 2. MODIFIED: View Route (Returns Skeleton HTML)
+@app.get("/result", response_class=HTMLResponse)
+async def result_page(request: Request):
+    # No data passed to Jinja context, just the request
+    return templates.TemplateResponse("result.html", {"request": request})
+
+
+# Add this new endpoint to main.py
+@app.post("/api/reset")
+async def reset_session(session_id: str = Depends(get_session_id)):
+    # Remove the session data if it exists
     if session_id in user_sessions:
         del user_sessions[session_id]
-        logger.info(f"Session {session_id} finished. Data cleared.")
+        # Alternatively, if you want to keep the ID but reset data:
+        # user_sessions[session_id] = { "questions": generate_questions(), "answers": [], ... }
 
-    return response
+    return {"status": "success"}
 
 
 # --- Main ---

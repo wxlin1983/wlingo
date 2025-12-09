@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quiz Results</title>
-    <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 
 <body>
@@ -14,35 +14,91 @@
 
         <div class="result-summary">
             <h2>Your Score:</h2>
-            <p>You answered <strong>{{ correct_count }}</strong> out of <strong>{{ total_questions }}</strong> questions
-                correctly.</p>
-            <p class="result-score">{{ score_percentage }}%</p>
+            <p>You answered <strong id="correct-count">-</strong> out of <strong id="total-questions">-</strong>
+                questions correctly.</p>
+            <p class="result-score"><span id="score-percentage">0</span>%</p>
         </div>
 
         <h2 class="review-heading">Answer Review:</h2>
 
-        {% for answer in answers %}
-        <div class="review-item">
-            <h3>{{ loop.index }}. Word: <strong>{{ answer.word }}</strong></h3>
-            <p>
-                <strong class="label">Correct Translation:</strong>
-                <span class="review-correct">{{ answer.correct_answer }}</span>
-            </p>
-            <p>
-                <strong class="label">Your Answer:</strong>
-                {% if answer.is_correct %}
-                <span class="review-correct">{{ answer.user_answer }} (Correct) 🟢</span>
-                {% else %}
-                <span class="review-incorrect">{{ answer.user_answer }} (Incorrect) 🔴</span>
-                {% endif %}
-            </p>
+        <div id="review-container">
+            <p style="text-align: center; color: #666;">Loading results...</p>
         </div>
-        {% endfor %}
 
         <div class="action-area">
-            <a href="/" class="start-new-quiz-btn">Start New Quiz 🔄</a>
+            <button onclick="startNewQuiz()" class="start-new-quiz-btn"
+                style="border:none; cursor:pointer; font-family:inherit;">
+                Start New Quiz 🔄
+            </button>
         </div>
     </div>
+
+    <script>
+        async function loadResults() {
+            try {
+                const response = await fetch('/api/result');
+
+                if (response.status === 401) {
+                    window.location.href = "/";
+                    return;
+                }
+
+                if (!response.ok) throw new Error("Failed to load results");
+
+                const data = await response.json();
+
+                // Update Stats
+                document.getElementById('correct-count').innerText = data.correct_count;
+                document.getElementById('total-questions').innerText = data.total_questions;
+                document.getElementById('score-percentage').innerText = data.score_percentage;
+
+                // Build Review List
+                const container = document.getElementById('review-container');
+                container.innerHTML = '';
+
+                data.answers.forEach((answer, index) => {
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'review-item';
+
+                    let userAnswerHtml = answer.is_correct
+                        ? `<span class="review-correct">${answer.user_answer} (Correct) 🟢</span>`
+                        : `<span class="review-incorrect">${answer.user_answer} (Incorrect) 🔴</span>`;
+
+                    itemDiv.innerHTML = `
+                        <h3>${index + 1}. Word: <strong>${answer.word}</strong></h3>
+                        <p><strong class="label">Correct Translation:</strong> <span class="review-correct">${answer.correct_answer}</span></p>
+                        <p><strong class="label">Your Answer:</strong> ${userAnswerHtml}</p>
+                    `;
+
+                    container.appendChild(itemDiv);
+                });
+
+            } catch (error) {
+                console.error(error);
+                document.getElementById('review-container').innerText = "Error loading results.";
+            }
+        }
+
+        // NEW: Function to reset session and go home
+        async function startNewQuiz() {
+            try {
+                const btn = document.querySelector('.start-new-quiz-btn');
+                btn.innerText = "Resetting...";
+                btn.disabled = true;
+
+                // Call the reset endpoint
+                await fetch('/api/reset', { method: 'POST' });
+
+                // Redirect to homepage (which will now generate a fresh quiz)
+                window.location.href = "/";
+            } catch (error) {
+                console.error("Failed to reset quiz:", error);
+                alert("Could not start new quiz. Please try again.");
+            }
+        }
+
+        loadResults();
+    </script>
 </body>
 
 </html>
