@@ -6,43 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vocabulary Quiz</title>
     <link href="/static/style.css" rel="stylesheet">
-    <style>
-        /* Basic styling for dynamic elements */
-        .option-btn {
-            display: block;
-            width: 100%;
-            padding: 10px;
-            margin: 5px 0;
-            background-color: #f0f0f0;
-            border: 1px solid #ccc;
-            cursor: pointer;
-            font-size: 1.1em;
-        }
-
-        .option-btn:hover {
-            background-color: #e0e0e0;
-        }
-
-        .correct {
-            background-color: #d4edda !important;
-            border-color: #c3e6cb;
-        }
-
-        .incorrect {
-            background-color: #f8d7da !important;
-            border-color: #f5c6cb;
-        }
-
-        .disabled {
-            pointer-events: none;
-            opacity: 0.7;
-        }
-
-        #loading {
-            font-style: italic;
-            color: #666;
-        }
-    </style>
 </head>
 
 <body>
@@ -61,35 +24,31 @@
             <div id="options-container">
             </div>
 
-            <div id="feedback-message" style="margin-top: 15px; font-weight: bold;"></div>
+            <div id="feedback-message"></div>
         </div>
 
-        <div style="margin-top: 20px;">
+        <div class="nav-area">
             <button id="next-btn" style="display:none;" onclick="goToNext()">Next Question >></button>
             <a href="/result" id="finish-btn" style="display:none;">See Results</a>
         </div>
     </div>
 
     <script>
-        // Get the index passed from FastAPI (the only piece of Jinja we keep)
         const currentIndex = {{ current_index }};
 
         async function loadQuestion() {
             try {
-                // 1. Fetch data from our new JSON endpoint
                 const response = await fetch(`/api/quiz/${currentIndex}`);
                 if (!response.ok) throw new Error("Failed to load question");
 
                 const data = await response.json();
 
-                // 2. Update Text Elements
                 document.getElementById('word-display').innerText = data.word;
                 document.getElementById('current-q').innerText = data.current_index + 1;
                 document.getElementById('total-q').innerText = data.total_questions;
 
-                // 3. Generate Options
                 const optionsContainer = document.getElementById('options-container');
-                optionsContainer.innerHTML = ''; // Clear loading text
+                optionsContainer.innerHTML = '';
 
                 data.options.forEach(option => {
                     const btn = document.createElement('button');
@@ -97,7 +56,6 @@
                     btn.innerText = option;
                     btn.onclick = () => submitAnswer(option, btn);
 
-                    // If question was already answered, apply styling immediately
                     if (data.answer_record) {
                         btn.classList.add('disabled');
                         if (option === data.answer_record.correct_answer) btn.classList.add('correct');
@@ -107,7 +65,6 @@
                     optionsContainer.appendChild(btn);
                 });
 
-                // 4. Handle Navigation Visibility
                 if (data.answer_record) {
                     showNextButton(data.total_questions);
                 }
@@ -119,7 +76,6 @@
         }
 
         async function submitAnswer(selectedOption, btnElement) {
-            // Disable all buttons immediately
             const allBtns = document.querySelectorAll('.option-btn');
             allBtns.forEach(b => b.classList.add('disabled'));
 
@@ -134,7 +90,6 @@
                 });
                 const result = await response.json();
 
-                // Highlight buttons based on result
                 allBtns.forEach(b => {
                     if (b.innerText === result.correct_answer) {
                         b.classList.add('correct');
@@ -144,13 +99,10 @@
                     }
                 });
 
-                // Show feedback text
                 const feedback = document.getElementById('feedback-message');
                 feedback.innerText = result.is_correct ? "Correct!" : `Wrong! The answer is ${result.correct_answer}`;
-                feedback.style.color = result.is_correct ? "green" : "red";
+                feedback.style.color = result.is_correct ? "#155724" : "#721c24"; // Using hex to match CSS variables
 
-                // Show navigation
-                // We fetch the total questions from the DOM since we set it earlier
                 const totalQ = parseInt(document.getElementById('total-q').innerText);
                 showNextButton(totalQ);
 
@@ -172,7 +124,6 @@
             window.location.href = `/quiz/${currentIndex + 1}`;
         }
 
-        // Initialize page
         loadQuestion();
     </script>
 </body>
