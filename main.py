@@ -191,55 +191,61 @@ async def start_quiz(
     return RedirectResponse(url="/quiz/0", status_code=302, headers=response.headers)
 
 
-@app.get("/quiz/{index}", response_class=HTMLResponse)
-async def display_question(
-    request: Request, index: int, session_id: str = Depends(get_session_id)
-):
-    """Displays a specific question by index, requiring a valid session ID."""
-
+# 1. NEW: API Endpoint to get question data (JSON)
+@app.get("/api/quiz/{index}", response_class=JSONResponse)
+async def get_question_data(index: int, session_id: str = Depends(get_session_id)):
+    """
+    Returns the raw data for a specific question in JSON format.
+    Used by the frontend AJAX call.
+    """
     session_data = user_sessions.get(session_id)
 
-    # Redirect to start if session is missing or invalid
     if not session_data:
-        logger.warning(
-            f"Invalid or missing session ID: {session_id}. Redirecting to /."
-        )
-        return RedirectResponse(url="/", status_code=302)
+        return JSONResponse({"error": "Session invalid"}, status_code=401)
 
     total_questions = session_data["total_questions"]
 
-    # Redirect to results if index is out of bounds
     if index >= total_questions or index < 0:
-        logger.warning(
-            f"Session {session_id}: Index {index} out of bounds (Total: {total_questions}). Redirecting to /result."
-        )
-        return RedirectResponse(url="/result", status_code=302)
+        return JSONResponse({"error": "Index out of bounds"}, status_code=404)
 
     current_q_data = session_data["prepared_questions"][index]
 
-    logger.info(
-        f"Session {session_id} viewing question {index + 1}/{total_questions}: {current_q_data['word']}"
-    )
-
-    # Check if this question has been answered to display feedback
+    # Check if previously answered
     answer_record = None
     if index < len(session_data["answers"]):
         answer_record = session_data["answers"][index]
 
-    context = {
-        "request": request,
+    return {
         "word": current_q_data["word"],
         "options": current_q_data["options"],
         "current_index": index,
         "total_questions": total_questions,
-        "correct_translation": current_q_data["translation"],
-        "answer_record": answer_record,
-        "session_id": session_id,  # Ensure session_id is passed for debugging
-        "is_first_question": index == 0,
-        "is_last_question": index == total_questions - 1,
+        "answer_record": answer_record,  # Will be null if not answered yet
     }
 
-    return templates.TemplateResponse("index.html", context)
+
+# 2. MODIFIED: View Route (Returns Skeleton HTML)
+@app.get("/quiz/{index}", response_class=HTMLResponse)
+async def display_question_page(
+    request: Request, index: int, session_id: str = Depends(get_session_id)
+):
+    """
+    Returns the HTML shell. The actual content is loaded via AJAX.
+    """
+    session_data = user_sessions.get(session_id)
+
+    # Basic validation to redirect if session is dead
+    if not session_data:
+        return RedirectResponse(url="/", status_code=302)
+
+    if index >= session_data["total_questions"]:
+        return RedirectResponse(url="/result", status_code=302)
+
+    # We only pass the 'index' to Jinja.
+    # The JS will use this index to call the API above.
+    return templates.TemplateResponse(
+        "index.html", {"request": request, "current_index": index}
+    )
 
 
 @app.post("/submit_answer", response_class=JSONResponse)

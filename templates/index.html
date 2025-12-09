@@ -1,265 +1,180 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Language Quiz - Question {{ current_index + 1 }}</title>
-    <link rel="stylesheet" href="{{ url_for('static', path='/style.css') }}">
+    <title>Vocabulary Quiz</title>
+    <link href="/static/style.css" rel="stylesheet">
+    <style>
+        /* Basic styling for dynamic elements */
+        .option-btn {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            cursor: pointer;
+            font-size: 1.1em;
+        }
+
+        .option-btn:hover {
+            background-color: #e0e0e0;
+        }
+
+        .correct {
+            background-color: #d4edda !important;
+            border-color: #c3e6cb;
+        }
+
+        .incorrect {
+            background-color: #f8d7da !important;
+            border-color: #f5c6cb;
+        }
+
+        .disabled {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        #loading {
+            font-style: italic;
+            color: #666;
+        }
+    </style>
 </head>
+
 <body>
     <div class="container">
-        
-        <div class="header-question-status">
-            <span class="question-status">Question {{ current_index + 1 }} of {{ total_questions }}</span>
+        <h1>Vocabulary Quiz</h1>
+
+        <div id="progress-container">
+            Question <span id="current-q"></span> of <span id="total-q"></span>
         </div>
 
-        <h1 class="main-question">What is the translation of "{{ word }}"?</h1>
+        <hr>
 
-        <form id="quiz-form">
-            <div class="options-container">
-                {% for option in options %}
-                    {% set is_disabled = answer_record is not none %}
-                    {% set is_checked = answer_record and answer_record.user_answer == option %}
-                    
-                    {% set option_class = '' %}
-                    {% if is_checked %}
-                        {% if answer_record.is_correct %}
-                            {% set option_class = 'correct' %}
-                        {% else %}
-                            {% set option_class = 'incorrect' %}
-                        {% endif %}
-                    {% endif %}
+        <div id="quiz-content">
+            <h2 id="word-display">Loading...</h2>
 
-                    <div class="option-item {{ option_class }}" data-value="{{ option }}">
-                        <input
-                            type="radio"
-                            id="option-{{ loop.index }}"
-                            name="answer"
-                            value="{{ option }}"
-                            class="option-input"
-                            {% if is_checked %}checked{% endif %}
-                            {% if is_disabled %}disabled{% endif %}
-                            required
-                        />
-                        <label for="option-{{ loop.index }}" class="option-label">
-                            {{ option }}
-                            
-                            {% if is_checked %}
-                                <span class="feedback-icon">
-                                    {% if answer_record.is_correct %}
-                                        <span class="correct-text">✅ Correct!</span>
-                                    {% else %}
-                                        <span class="incorrect-text">❌ Wrong!</span>
-                                    {% endif %}
-                                </span>
-                            {% elif is_disabled and option == correct_translation %}
-                                <span class="feedback-icon">
-                                    <span class="correct-text">Correct Answer</span>
-                                </span>
-                            {% endif %}
-                        </label>
-                    </div>
-                {% endfor %}
+            <div id="options-container">
             </div>
 
-            <input type="hidden" name="current_index" value="{{ current_index }}">
-            
-            <div class="footer-action-buttons">
-                <div id="feedback-panel" class="submission-message" style="display: none;">
-                    </div>
+            <div id="feedback-message" style="margin-top: 15px; font-weight: bold;"></div>
+        </div>
 
-                <button 
-                    type="submit" 
-                    id="submit-btn" 
-                    class="btn btn-primary"
-                    {% if is_disabled %}disabled{% endif %}
-                >
-                    Check Answer
-                </button>
-            </div>
-        </form>
-    </div>
-
-    <div class="navigation-controls">
-        {% if not is_first_question %}
-            <a href="/quiz/{{ current_index - 1 }}" class="nav-btn">Previous</a>
-        {% else %}
-            <span style="visibility: hidden;">Previous</span>
-        {% endif %}
-
-        {% if is_last_question %}
-            <a href="/result" id="finish-btn-nav" class="nav-btn finish-btn" {% if not is_disabled %}style="pointer-events: none; opacity: 0.5;"{% endif %}>
-                Finish Quiz
-            </a>
-        {% else %}
-            <a href="/quiz/{{ current_index + 1 }}" id="next-btn-nav" class="nav-btn" {% if not is_disabled %}style="pointer-events: none; opacity: 0.5;"{% endif %}>
-                Next
-            </a>
-        {% endif %}
+        <div style="margin-top: 20px;">
+            <button id="next-btn" style="display:none;" onclick="goToNext()">Next Question >></button>
+            <a href="/result" id="finish-btn" style="display:none;">See Results</a>
+        </div>
     </div>
 
     <script>
-        const form = document.getElementById('quiz-form');
-        const submitButton = document.getElementById('submit-btn');
-        const optionsContainer = document.querySelector('.options-container');
-        const feedbackPanel = document.getElementById('feedback-panel');
-        const nextButtonNav = document.getElementById('next-btn-nav');
-        const finishButtonNav = document.getElementById('finish-btn-nav');
-        
-        // Pass boolean safely from Jinja to JS
-        const isLastQuestion = {{ is_last_question | tojson }};
+        // Get the index passed from FastAPI (the only piece of Jinja we keep)
+        const currentIndex = {{ current_index }};
 
-        // --- Core Style and Feedback Handlers ---
-        
-        // Applies 'correct'/'incorrect' classes to options based on result
-        function applyFeedbackStyles(record, userAnswer) {
-            const items = optionsContainer.querySelectorAll('.option-item');
-            
-            items.forEach(item => {
-                const optionValue = item.getAttribute('data-value');
-                const label = item.querySelector('.option-label');
-                
-                // Remove old feedback styles
-                item.classList.remove('correct', 'incorrect');
-                
-                // Remove existing text feedback icons
-                const existingIcon = label.querySelector('.feedback-icon');
-                if (existingIcon) {
-                    existingIcon.remove();
+        async function loadQuestion() {
+            try {
+                // 1. Fetch data from our new JSON endpoint
+                const response = await fetch(`/api/quiz/${currentIndex}`);
+                if (!response.ok) throw new Error("Failed to load question");
+
+                const data = await response.json();
+
+                // 2. Update Text Elements
+                document.getElementById('word-display').innerText = data.word;
+                document.getElementById('current-q').innerText = data.current_index + 1;
+                document.getElementById('total-q').innerText = data.total_questions;
+
+                // 3. Generate Options
+                const optionsContainer = document.getElementById('options-container');
+                optionsContainer.innerHTML = ''; // Clear loading text
+
+                data.options.forEach(option => {
+                    const btn = document.createElement('button');
+                    btn.className = 'option-btn';
+                    btn.innerText = option;
+                    btn.onclick = () => submitAnswer(option, btn);
+
+                    // If question was already answered, apply styling immediately
+                    if (data.answer_record) {
+                        btn.classList.add('disabled');
+                        if (option === data.answer_record.correct_answer) btn.classList.add('correct');
+                        if (option === data.answer_record.user_answer && !data.answer_record.is_correct) btn.classList.add('incorrect');
+                    }
+
+                    optionsContainer.appendChild(btn);
+                });
+
+                // 4. Handle Navigation Visibility
+                if (data.answer_record) {
+                    showNextButton(data.total_questions);
                 }
 
-                let iconHtml = '';
-
-                if (optionValue === record.correct_answer) {
-                    // 1. Mark the correct answer
-                    item.classList.add('correct');
-                    iconHtml = '<span class="correct-text">✅ Correct!</span>';
-                } else if (optionValue === userAnswer && !record.is_correct) {
-                    // 2. Mark the user's incorrect choice
-                    item.classList.add('incorrect');
-                    iconHtml = '<span class="incorrect-text">❌ Wrong!</span>';
-                }
-
-                // Add text feedback icon only for selected options or the correct answer
-                if (optionValue === userAnswer) {
-                    const feedbackIconSpan = document.createElement('span');
-                    feedbackIconSpan.className = 'feedback-icon';
-                    feedbackIconSpan.innerHTML = iconHtml;
-                    label.appendChild(feedbackIconSpan);
-                } else if (optionValue === record.correct_answer && !record.is_correct) {
-                    // If the user was wrong, explicitly mark the correct option
-                    const feedbackIconSpan = document.createElement('span');
-                    feedbackIconSpan.className = 'feedback-icon';
-                    feedbackIconSpan.innerHTML = '<span class="correct-text">Correct Answer</span>';
-                    label.appendChild(feedbackIconSpan);
-                }
-            });
-        }
-        
-        // Disables all radio inputs
-        function disableOptions() {
-            const radioInputs = optionsContainer.querySelectorAll('input[type="radio"]');
-            radioInputs.forEach(input => input.disabled = true);
+            } catch (error) {
+                console.error(error);
+                document.getElementById('word-display').innerText = "Error loading question.";
+            }
         }
 
-        // --- Initialization on Page Load (Handles Jinja pre-answered state) ---
+        async function submitAnswer(selectedOption, btnElement) {
+            // Disable all buttons immediately
+            const allBtns = document.querySelectorAll('.option-btn');
+            allBtns.forEach(b => b.classList.add('disabled'));
 
-        window.onload = () => {
-            // Safely retrieve answer_record from Jinja
-            const answerRecordData = {{ answer_record | tojson }};
-            
-            if (answerRecordData && answerRecordData.attempted) {
-                // If already answered, disable options/submit button, and show feedback
-                disableOptions();
-                submitButton.disabled = true;
-
-                // Show submission message
-                feedbackPanel.style.display = 'block';
-                feedbackPanel.classList.add(answerRecordData.is_correct ? 'message-correct' : 'message-wrong');
-                feedbackPanel.innerHTML = answerRecordData.is_correct ? 'Excellent! The translation is correct!' : `Wrong. The correct answer is: **${answerRecordData.correct_answer}**`;
-                
-                // Enable navigation button
-                const navButton = isLastQuestion ? finishButtonNav : nextButtonNav;
-                if (navButton) {
-                    navButton.style.pointerEvents = 'auto';
-                    navButton.style.opacity = '1';
-                }
-            }
-        };
-
-
-        // --- Form Submission Handler (AJAX) ---
-
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const formData = new FormData(form);
-            const userAnswer = formData.get('answer');
-
-            if (!userAnswer) {
-                alert('Please select an option!');
-                return;
-            }
-
-            // Disable button to prevent double-submission
-            submitButton.disabled = true;
+            const formData = new FormData();
+            formData.append('answer', selectedOption);
+            formData.append('current_index', currentIndex);
 
             try {
                 const response = await fetch('/submit_answer', {
                     method: 'POST',
-                    body: new URLSearchParams(formData),
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded'
+                    body: formData
+                });
+                const result = await response.json();
+
+                // Highlight buttons based on result
+                allBtns.forEach(b => {
+                    if (b.innerText === result.correct_answer) {
+                        b.classList.add('correct');
+                    }
+                    if (b === btnElement && !result.is_correct) {
+                        b.classList.add('incorrect');
                     }
                 });
 
-                const record = await response.json();
+                // Show feedback text
+                const feedback = document.getElementById('feedback-message');
+                feedback.innerText = result.is_correct ? "Correct!" : `Wrong! The answer is ${result.correct_answer}`;
+                feedback.style.color = result.is_correct ? "green" : "red";
 
-                if (response.ok) {
-                    disableOptions(); // Disable all options
-                    
-                    // 1. Apply visual feedback styles
-                    applyFeedbackStyles(record, userAnswer);
-
-                    // 2. Display submission message
-                    feedbackPanel.style.display = 'block';
-                    feedbackPanel.classList.remove('message-correct', 'message-wrong');
-                    
-                    if (record.is_correct) {
-                        feedbackPanel.classList.add('message-correct');
-                        feedbackPanel.innerHTML = 'Excellent! The translation is correct!';
-                    } else {
-                        feedbackPanel.classList.add('message-wrong');
-                        feedbackPanel.innerHTML = `Wrong. The correct answer is: **${record.correct_answer}**`;
-                    }
-
-                    // 3. Enable navigation button
-                    const navButton = isLastQuestion ? finishButtonNav : nextButtonNav;
-                    if (navButton) {
-                        navButton.style.pointerEvents = 'auto';
-                        navButton.style.opacity = '1';
-                    }
-
-                } else {
-                    // Handle server error (e.g., already answered)
-                    console.error("Submission error:", record.error);
-                    submitButton.disabled = false; // Re-enable button
-                }
+                // Show navigation
+                // We fetch the total questions from the DOM since we set it earlier
+                const totalQ = parseInt(document.getElementById('total-q').innerText);
+                showNextButton(totalQ);
 
             } catch (error) {
-                console.error('Fetch error:', error);
-                submitButton.disabled = false; // Re-enable button
+                console.error("Submission failed", error);
             }
-        });
-        
-        // --- Option Click Event (Re-enables submit button if an option is clicked) ---
-        optionsContainer.addEventListener('change', () => {
-            // Re-enable submit button if it was disabled by the form submission logic
-            if (!submitButton.disabled) {
-                submitButton.disabled = false;
-            }
-        });
+        }
 
+        function showNextButton(totalQuestions) {
+            const nextIndex = currentIndex + 1;
+            if (nextIndex < totalQuestions) {
+                document.getElementById('next-btn').style.display = 'inline-block';
+            } else {
+                document.getElementById('finish-btn').style.display = 'inline-block';
+            }
+        }
+
+        function goToNext() {
+            window.location.href = `/quiz/${currentIndex + 1}`;
+        }
+
+        // Initialize page
+        loadQuestion();
     </script>
 </body>
+
 </html>
