@@ -44,9 +44,9 @@ class AnswerRecord(BaseModel):
 
 # --- Configuration ---
 class Settings:
-    PROJECT_NAME: str = "Lingo"
+    PROJECT_NAME: str = "wlingo"
     DEBUG: bool = False
-    LOG_FILE: str = "lingo.log"
+    LOG_FILE: str = "wlingo.log"
     WORDS_FILE: str = "vocabulary/words.csv"
     TEST_SIZE: int = 15
     SESSION_COOKIE_NAME: str = "quiz_session_id"

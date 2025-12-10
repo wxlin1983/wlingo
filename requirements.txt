@@ -9,15 +9,15 @@ anyio==4.12.0
     #   starlette
     #   watchfiles
 black==25.11.0
-    # via lingo (pyproject.toml)
+    # via wlingo (pyproject.toml)
 click==8.3.1
     # via
     #   black
     #   uvicorn
 fastapi==0.124.0
-    # via lingo (pyproject.toml)
+    # via wlingo (pyproject.toml)
 flake8==7.3.0
-    # via lingo (pyproject.toml)
+    # via wlingo (pyproject.toml)
 h11==0.16.0
     # via uvicorn
 httptools==0.7.1
@@ -25,7 +25,7 @@ httptools==0.7.1
 idna==3.10
     # via anyio
 jinja2==3.1.6
-    # via lingo (pyproject.toml)
+    # via wlingo (pyproject.toml)
 markupsafe==3.0.3
     # via jinja2
 mccabe==0.7.0
@@ -37,7 +37,7 @@ numpy==2.2.4
 packaging==25.0
     # via black
 pandas==2.3.3
-    # via lingo (pyproject.toml)
+    # via wlingo (pyproject.toml)
 pathspec==0.12.1
     # via black
 platformdirs==4.5.1
@@ -55,7 +55,7 @@ python-dateutil==2.9.0.post0
 python-dotenv==1.2.1
     # via uvicorn
 python-multipart==0.0.20
-    # via lingo (pyproject.toml)
+    # via wlingo (pyproject.toml)
 pytokens==0.3.0
     # via black
 pytz==2025.2
@@ -79,7 +79,7 @@ typing-inspection==0.4.2
 tzdata==2025.2
     # via pandas
 uvicorn==0.38.0
-    # via lingo (pyproject.toml)
+    # via wlingo (pyproject.toml)
 uvloop==0.22.1
     # via uvicorn
 watchfiles==1.1.1
