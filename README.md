@@ -2,16 +2,6 @@
 
 wlingo is a web application that helps you learn new vocabulary through a simple, interactive quiz.
 
-## Features
-
-- **Interactive Quiz:** Engages users with multiple-choice questions.
-- **Instant Feedback:** Shows whether your answer was correct right after you choose it.
-- **Score Tracking:** Displays your final score and a summary of your answers.
-- **Session Management:** Tracks your progress as you move through the quiz.
-- **Customizable Vocabulary:** Easily add your own words by editing a simple CSV file.
-
------
-
 ## Getting Started
 
 You can run this application either directly on your machine using Python or with Docker.
@@ -79,8 +69,6 @@ Once the server is running, you can access the application in your web browser:
 
 -   **Start Quiz:** [http://localhost:8000](http://localhost:8000)
 -   **API Docs (Swagger UI):** [http://localhost:8000/docs](http://localhost:8000/docs)
-
------
 
 ## 🎨 Customization
 
