@@ -72,65 +72,66 @@
     </div>
 
     <script>
-        $(document).ready(function() {
+        $(document).ready(function () {
             // Get the index passed from FastAPI
-            const currentIndex = {{ current_index }};
+            const currentIndex = {{ current_index }
+        };
 
-            // --- 1. Load Question Data ---
-            function loadQuestion() {
-                $.get(`/api/quiz/${currentIndex}`)
-                    .done(function(data) {
-                        // Update Text Elements
-                        $('#word-display').text(data.word);
-                        $('#current-q').text(data.current_index + 1);
-                        $('#total-q').text(data.total_questions);
+        // --- 1. Load Question Data ---
+        function loadQuestion() {
+            $.get(`/api/quiz/${currentIndex}`)
+                .done(function (data) {
+                    // Update Text Elements
+                    $('#word-display').text(data.word);
+                    $('#current-q').text(data.current_index + 1);
+                    $('#total-q').text(data.total_questions);
 
-                        const $container = $('#options-container').empty();
+                    const $container = $('#options-container').empty();
 
-                        // Generate Buttons
-                        $.each(data.options, function(index, option) {
-                            const $btn = $('<button>')
-                                .addClass('option-btn')
-                                .text(option)
-                                .on('click', function() {
-                                    submitAnswer(index, $(this));
-                                });
+                    // Generate Buttons
+                    $.each(data.options, function (index, option) {
+                        const $btn = $('<button>')
+                            .addClass('option-btn')
+                            .text(option)
+                            .on('click', function () {
+                                submitAnswer(index, $(this));
+                            });
 
-                            // Apply styles if already answered
-                            if (data.answer_record) {
-                                $btn.addClass('disabled');
-                                if (option === data.answer_record.correct_answer) $btn.addClass('correct');
-                                if (option === data.answer_record.user_answer && !data.answer_record.is_correct) $btn.addClass('incorrect');
-                            }
-
-                            $container.append($btn);
-                        });
-
-                        // Show navigation if answered
+                        // Apply styles if already answered
                         if (data.answer_record) {
-                            showNextButton(data.total_questions);
+                            $btn.addClass('disabled');
+                            if (option === data.answer_record.correct_answer) $btn.addClass('correct');
+                            if (option === data.answer_record.user_answer && !data.answer_record.is_correct) $btn.addClass('incorrect');
                         }
-                    })
-                    .fail(function() {
-                        $('#word-display').text("Error loading question.");
-                        console.error("Load failed");
+
+                        $container.append($btn);
                     });
-            }
 
-            // --- 2. Submit Answer ---
-            function submitAnswer(selectedIndex, $clickedBtn) {
-                // Disable all buttons immediately
-                $('.option-btn').addClass('disabled');
-
-                // Send data using jQuery POST
-                // jQuery automatically formats this object for Form(...) in FastAPI
-                $.post('/submit_answer', {
-                    selected_option_index: selectedIndex,
-                    current_index: currentIndex
+                    // Show navigation if answered
+                    if (data.answer_record) {
+                        showNextButton(data.total_questions);
+                    }
                 })
-                .done(function(result) {
+                .fail(function () {
+                    $('#word-display').text("Error loading question.");
+                    console.error("Load failed");
+                });
+        }
+
+        // --- 2. Submit Answer ---
+        function submitAnswer(selectedIndex, $clickedBtn) {
+            // Disable all buttons immediately
+            $('.option-btn').addClass('disabled');
+
+            // Send data using jQuery POST
+            // jQuery automatically formats this object for Form(...) in FastAPI
+            $.post('/submit_answer', {
+                selected_option_index: selectedIndex,
+                current_index: currentIndex
+            })
+                .done(function (result) {
                     // Update Button Colors
-                    $('.option-btn').each(function() {
+                    $('.option-btn').each(function () {
                         const $btn = $(this);
                         if ($btn.text() === result.correct_answer) {
                             $btn.addClass('correct');
@@ -153,29 +154,29 @@
                     const totalQ = parseInt($('#total-q').text());
                     showNextButton(totalQ);
                 })
-                .fail(function(xhr) {
+                .fail(function (xhr) {
                     const errorMsg = xhr.responseJSON ? xhr.responseJSON.error : "Submission failed";
                     alert("Error: " + errorMsg);
                 });
+        }
+
+        // --- 3. Helpers ---
+        function showNextButton(totalQuestions) {
+            const nextIndex = currentIndex + 1;
+            if (nextIndex < totalQuestions) {
+                $('#next-btn').css('display', 'inline-block');
+            } else {
+                $('#finish-btn').css('display', 'inline-block');
             }
+        }
 
-            // --- 3. Helpers ---
-            function showNextButton(totalQuestions) {
-                const nextIndex = currentIndex + 1;
-                if (nextIndex < totalQuestions) {
-                    $('#next-btn').css('display', 'inline-block');
-                } else {
-                    $('#finish-btn').css('display', 'inline-block');
-                }
-            }
+        // Bind Next Button Click
+        $('#next-btn').on('click', function () {
+            window.location.href = `/quiz/${currentIndex + 1}`;
+        });
 
-            // Bind Next Button Click
-            $('#next-btn').on('click', function() {
-                window.location.href = `/quiz/${currentIndex + 1}`;
-            });
-
-            // Initialize Page
-            loadQuestion();
+        // Initialize Page
+        loadQuestion();
         });
     </script>
 </body>

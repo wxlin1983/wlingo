@@ -146,17 +146,22 @@ async def startup_event():
     ALL_WORDS = load_words()
 
 
-# --- Routes ---
-@app.get("/", response_class=RedirectResponse)
-async def start_quiz(
-    response: Response, session_id: Optional[str] = Depends(get_session_id)
-):
-    """Starts a new quiz or resumes existing session."""
-    if not ALL_WORDS:
-        return HTMLResponse("<h1>Error: No vocabulary loaded.</h1>", status_code=500)
+# 1. NEW: The Landing Page
+@app.get("/", response_class=HTMLResponse)
+async def home(request: Request):
+    """Serves the welcome page."""
+    return templates.TemplateResponse("start.html", {"request": request})
 
-    if session_id in sessions:
-        return RedirectResponse(url="/quiz/0", status_code=302)
+
+# 2. MODIFIED: Create Session and Redirect
+@app.post("/start", response_class=RedirectResponse)
+async def start_quiz_session(response: Response):
+    """
+    Creates a new session, sets the cookie, and redirects to Q0.
+    """
+    if not ALL_WORDS:
+        # Determine how to handle error (e.g. redirect to error page)
+        return RedirectResponse(url="/", status_code=302)
 
     # Initialize Session
     new_id = str(uuid.uuid4())
@@ -170,14 +175,20 @@ async def start_quiz(
         answers=[],
     )
 
-    logger.info(f"New session: {new_id}")
-    response.set_cookie(
+    logger.info(f"New session started: {new_id}")
+
+    # Create the redirect response
+    redirect = RedirectResponse(url="/quiz/0", status_code=302)
+
+    # Set the cookie on the redirect response
+    redirect.set_cookie(
         key=settings.SESSION_COOKIE_NAME,
         value=new_id,
         httponly=True,
         samesite="Lax",
     )
-    return RedirectResponse(url="/quiz/0", status_code=302, headers=response.headers)
+
+    return redirect
 
 
 @app.get("/api/quiz/{index}")
@@ -215,7 +226,7 @@ async def display_question_page(
         return RedirectResponse(url="/result", status_code=302)
 
     return templates.TemplateResponse(
-        "index.html", {"request": request, "current_index": index}
+        "quiz.html", {"request": request, "current_index": index}
     )
 
 

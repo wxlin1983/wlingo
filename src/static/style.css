@@ -190,3 +190,31 @@ hr {
   background-color: #218838;
   transform: scale(1.05);
 }
+
+/* Ensure the button looks clickable and nice */
+.start-new-quiz-btn {
+  display: inline-block;
+  background-color: #58cc02;
+  /* Green for start */
+  color: white;
+  padding: 15px 40px;
+  border-radius: 15px;
+  text-decoration: none;
+  font-weight: bold;
+  font-size: 1.2em;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.1s, background-color 0.2s;
+  box-shadow: 0 4px 0 #46a302;
+  /* 3D effect */
+}
+
+.start-new-quiz-btn:hover {
+  background-color: #61e002;
+  transform: translateY(-2px);
+}
+
+.start-new-quiz-btn:active {
+  transform: translateY(2px);
+  box-shadow: none;
+}
