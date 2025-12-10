@@ -2,6 +2,7 @@ import logging
 import os
 import random
 import uuid
+import glob
 from datetime import datetime, timedelta
 from logging.handlers import RotatingFileHandler
 from typing import Dict, List, Optional, Any
@@ -33,7 +34,8 @@ class SessionData(BaseModel):
     correct_count: int
     total_questions: int
     answers: List[Dict[str, Any]]
-    created_at: datetime  # Tracks when the session started
+    created_at: datetime
+    topic: str  # Selected vocabulary set
 
 
 class AnswerRecord(BaseModel):
@@ -46,129 +48,142 @@ class AnswerRecord(BaseModel):
 
 # --- Configuration ---
 class Settings:
-    """Centralized configuration for the application."""
-
     PROJECT_NAME: str = "wlingo"
     DEBUG: bool = False
     LOG_DIR: str = "log"
     LOG_FILE: str = "wlingo.log"
-    WORDS_FILE: str = "vocabulary/words.csv"
+    VOCAB_DIR: str = "vocabulary"
     TEST_SIZE: int = 15
     SESSION_COOKIE_NAME: str = "quiz_session_id"
-    SESSION_TIMEOUT_MINUTES: int = 120  # 2 hours
+    SESSION_TIMEOUT_MINUTES: int = 120
 
 
 settings = Settings()
 
 # --- Logging Setup ---
-# 1. Create log directory if it doesn't exist
 if not os.path.exists(settings.LOG_DIR):
     os.makedirs(settings.LOG_DIR)
-
-# 2. Construct full log path
 log_path = os.path.join(settings.LOG_DIR, settings.LOG_FILE)
-
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 logger = logging.getLogger(__name__)
-
-# 3. Use the new path in the file handler
 file_handler = RotatingFileHandler(log_path, maxBytes=5_000_000, backupCount=3)
 file_handler.setFormatter(
     logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
 )
 logger.addHandler(file_handler)
 
-
-# --- App Setup ---
 app = FastAPI(title=settings.PROJECT_NAME, debug=settings.DEBUG)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 # --- Storage ---
-DUMMY_WORDS = [
-    {"word": "Hund", "translation": "dog"},
-    {"word": "Katze", "translation": "cat"},
-    {"word": "Baum", "translation": "tree"},
-    {"word": "Haus", "translation": "house"},
-    {"word": "Wasser", "translation": "water"},
-]
-ALL_WORDS: List[Dict[str, str]] = []
+# Key: filename (e.g., 'german_basic'), Value: word list
+ALL_VOCAB_SETS: Dict[str, List[Dict[str, str]]] = {}
 sessions: Dict[str, SessionData] = {}
 
-
 # --- Core Logic ---
-def load_words() -> List[Dict[str, str]]:
-    """Loads vocabulary from CSV or falls back to dummy data."""
-    try:
-        df = pd.read_csv(settings.WORDS_FILE, encoding="utf-8")
-        logger.info(f"Loaded {len(df)} words.")
-        return df.to_dict("records")
-    except FileNotFoundError:
-        logger.warning("CSV not found, using dummy data.")
-        return DUMMY_WORDS
 
 
-def get_test_words() -> List[Dict[str, str]]:
-    """Selects a random subset of words for the quiz."""
-    if not ALL_WORDS:
+def load_all_vocabularies():
+    """Load all .csv files from the vocabulary directory."""
+    global ALL_VOCAB_SETS
+    ALL_VOCAB_SETS = {}
+
+    # Ensure directory exists
+    if not os.path.exists(settings.VOCAB_DIR):
+        os.makedirs(settings.VOCAB_DIR)
+        logger.warning(f"Created directory {settings.VOCAB_DIR}. Please add CSV files.")
+        return
+
+    # Find all CSV files
+    csv_files = glob.glob(os.path.join(settings.VOCAB_DIR, "*.csv"))
+
+    for file_path in csv_files:
+        try:
+            # Use filename as ID
+            file_name = os.path.splitext(os.path.basename(file_path))[0]
+            df = pd.read_csv(file_path, encoding="utf-8")
+
+            # Validate columns
+            if "word" in df.columns and "translation" in df.columns:
+                ALL_VOCAB_SETS[file_name] = df.to_dict("records")
+                logger.info(f"Loaded {len(df)} words from {file_name}")
+            else:
+                logger.error(
+                    f"Skipping {file_name}: Missing 'word' or 'translation' columns."
+                )
+
+        except Exception as e:
+            logger.error(f"Failed to load {file_path}: {e}")
+
+    # Fallback to dummy data if no files found
+    if not ALL_VOCAB_SETS:
+        logger.warning("No valid CSV files found. Loading dummy data.")
+        ALL_VOCAB_SETS["default_dummy"] = [
+            {"word": "Hund", "translation": "dog"},
+            {"word": "Katze", "translation": "cat"},
+            {"word": "Baum", "translation": "tree"},
+        ]
+
+
+def get_test_words(topic: str) -> List[Dict[str, str]]:
+    """Select random words based on topic."""
+    word_list = ALL_VOCAB_SETS.get(topic, [])
+    if not word_list:
         return []
-    return random.sample(ALL_WORDS, min(settings.TEST_SIZE, len(ALL_WORDS)))
+    return random.sample(word_list, min(settings.TEST_SIZE, len(word_list)))
 
 
-def generate_options(correct_translation: str) -> List[str]:
-    """Generates 4 options including the correct answer."""
-    all_translations = {w["translation"] for w in ALL_WORDS}
+def generate_options(correct_translation: str, topic: str) -> List[str]:
+    """Generate options from the specific topic."""
+    word_list = ALL_VOCAB_SETS.get(topic, [])
+    all_translations = {w["translation"] for w in word_list}
     all_translations.discard(correct_translation)
 
-    # Ensure we have at least 3 wrong options
-    incorrect_options = list(all_translations)
-    while len(incorrect_options) < 3:
-        incorrect_options.append(f"Option {len(incorrect_options)+1}")
+    num_options_to_generate = 3
+    if len(all_translations) < num_options_to_generate:
+        incorrect_options = list(all_translations)
+        while len(incorrect_options) < num_options_to_generate:
+            incorrect_options.append(f"Option {len(incorrect_options)+1}")
+    else:
+        incorrect_options = random.sample(
+            list(all_translations), num_options_to_generate
+        )
 
-    options = [correct_translation] + random.sample(incorrect_options, 3)
+    options = [correct_translation] + incorrect_options
     random.shuffle(options)
     return options
 
 
-def prepare_quiz_data(test_words: List[Dict[str, str]]) -> List[Question]:
-    """Generates Questions objects for the session."""
+def prepare_quiz_data(test_words: List[Dict[str, str]], topic: str) -> List[Question]:
     return [
         Question(
             word=item["word"],
             translation=item["translation"],
-            options=generate_options(item["translation"]),
+            options=generate_options(item["translation"], topic),
         )
         for item in test_words
     ]
 
 
 def get_active_session(session_id: str) -> Optional[SessionData]:
-    """Retrieves a session if it exists and hasn't expired."""
     if not session_id or session_id not in sessions:
         return None
-
     session = sessions[session_id]
-
-    # Check timeout
     if datetime.now() - session.created_at > timedelta(
         minutes=settings.SESSION_TIMEOUT_MINUTES
     ):
-        logger.info(
-            f"Session {session_id} expired (created at {session.created_at}). Deleting."
-        )
         del sessions[session_id]
         return None
-
     return session
 
 
-# --- Dependencies ---
 def get_session_id(
-    session_id: Optional[str] = Cookie(None, alias=settings.SESSION_COOKIE_NAME),
+    session_id: Optional[str] = Cookie(None, alias=settings.SESSION_COOKIE_NAME)
 ) -> Optional[str]:
     return session_id
 
@@ -176,68 +191,83 @@ def get_session_id(
 # --- Lifecycle ---
 @app.on_event("startup")
 async def startup_event():
-    global ALL_WORDS
-    ALL_WORDS = load_words()
+    load_all_vocabularies()
 
 
-# 1. NEW: The Landing Page
+# --- Routes ---
+
+
+# API: Return vocabulary topics
+@app.get("/api/topics")
+async def get_topics():
+    """Returns a list of available vocabulary sets."""
+    topics = []
+    if not ALL_VOCAB_SETS:
+        # Return default if empty
+        return [{"id": "default_dummy", "name": "Default Demo Set", "count": 5}]
+
+    for key in ALL_VOCAB_SETS.keys():
+        display_name = key.replace("_", " ").title()
+        topics.append(
+            {"id": key, "name": display_name, "count": len(ALL_VOCAB_SETS[key])}
+        )
+
+    # Sort by name
+    topics.sort(key=lambda x: x["name"])
+    return topics
+
+
+# Serve start page
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
-    """Serves the welcome page."""
+    """Serves the welcome page skeleton."""
     return templates.TemplateResponse("start.html", {"request": request})
 
 
-# 2. MODIFIED: Create Session and Redirect
+# Create session with selected topic
 @app.post("/start", response_class=RedirectResponse)
-async def start_quiz_session(response: Response):
-    """
-    Creates a new session, sets the cookie, and redirects to Q0.
-    """
-    if not ALL_WORDS:
-        # Determine how to handle error (e.g. redirect to error page)
-        return RedirectResponse(url="/", status_code=302)
+async def start_quiz_session(
+    response: Response, topic: str = Form(...)  # Topic from form
+):
+    # Validate topic
+    if topic not in ALL_VOCAB_SETS:
+        # Default to first if invalid
+        topic = list(ALL_VOCAB_SETS.keys())[0] if ALL_VOCAB_SETS else "default_dummy"
 
-    # Initialize Session
     new_id = str(uuid.uuid4())
-    test_words = get_test_words()
-    prepared_questions = prepare_quiz_data(test_words)
+    test_words = get_test_words(topic)
+    prepared_questions = prepare_quiz_data(test_words, topic)
 
     sessions[new_id] = SessionData(
         prepared_questions=prepared_questions,
         correct_count=0,
         total_questions=len(prepared_questions),
         answers=[],
-        created_at=datetime.now(),  # Set creation time
+        created_at=datetime.now(),
+        topic=topic,  # Record selected topic
     )
 
-    logger.info(f"New session started: {new_id}")
+    logger.info(f"New session started: {new_id} [Topic: {topic}]")
 
-    # Create the redirect response
     redirect = RedirectResponse(url="/quiz/0", status_code=302)
-
-    # Set the cookie on the redirect response
     redirect.set_cookie(
         key=settings.SESSION_COOKIE_NAME,
         value=new_id,
         httponly=True,
         samesite="Lax",
     )
-
     return redirect
 
 
 @app.get("/api/quiz/{index}")
 async def get_question_data(index: int, session_id: str = Depends(get_session_id)):
-    """Returns JSON data for a specific question."""
     session_data = get_active_session(session_id)
     if not session_data:
-        return JSONResponse({"error": "Session invalid or expired"}, status_code=401)
-
+        return JSONResponse({"error": "Session invalid"}, status_code=401)
     if not (0 <= index < session_data.total_questions):
-        return JSONResponse({"error": "Index out of bounds"}, status_code=404)
+        return JSONResponse({"error": "Index error"}, status_code=404)
 
     current_q = session_data.prepared_questions[index]
-    # Return answer record if it exists (for review/history)
     record = session_data.answers[index] if index < len(session_data.answers) else None
 
     return {
@@ -253,13 +283,11 @@ async def get_question_data(index: int, session_id: str = Depends(get_session_id
 async def display_question_page(
     request: Request, index: int, session_id: str = Depends(get_session_id)
 ):
-    """Serves the HTML shell for the quiz question."""
     session_data = get_active_session(session_id)
     if not session_data:
         return RedirectResponse(url="/", status_code=302)
     if index >= session_data.total_questions:
         return RedirectResponse(url="/result", status_code=302)
-
     return templates.TemplateResponse(
         "quiz.html", {"request": request, "current_index": index}
     )
@@ -267,44 +295,26 @@ async def display_question_page(
 
 @app.post("/submit_answer", response_model=AnswerRecord)
 async def submit_answer(
-    selected_option_index: int = Form(...),  # Accepts Integer Index
+    selected_option_index: int = Form(...),
     current_index: int = Form(...),
     session_id: str = Depends(get_session_id),
 ):
-    """
-    Validates answer index, looks up string value, and records result.
-    """
     session_data = get_active_session(session_id)
-
-    # 1. Validate Session
     if not session_data or not (0 <= current_index < session_data.total_questions):
-        return JSONResponse(
-            {"error": "Invalid session, expired, or index error"}, status_code=401
-        )
-
-    # 2. Prevent Double Submission
+        return JSONResponse({"error": "Invalid session"}, status_code=401)
     if current_index < len(session_data.answers):
         return JSONResponse({"error": "Already answered"}, status_code=400)
 
     current_q = session_data.prepared_questions[current_index]
-
-    # 3. Validate Option Index
     if not (0 <= selected_option_index < len(current_q.options)):
-        return JSONResponse({"error": "Invalid option index"}, status_code=400)
+        return JSONResponse({"error": "Invalid option"}, status_code=400)
 
-    # 4. Lookup String & Check Answer
     user_answer_str = current_q.options[selected_option_index]
     is_correct = user_answer_str == current_q.translation
 
     if is_correct:
         session_data.correct_count += 1
 
-    logger.info(
-        f"Session {session_id} Q{current_index}: Selected idx {selected_option_index} "
-        f"('{user_answer_str}') -> {'CORRECT' if is_correct else 'INCORRECT'}"
-    )
-
-    # 5. Record Result
     record = AnswerRecord(
         word=current_q.word,
         user_answer=user_answer_str,
@@ -313,20 +323,17 @@ async def submit_answer(
         attempted=True,
     )
     session_data.answers.append(record)
-
     return record
 
 
 @app.get("/api/result")
 async def get_result_data(session_id: str = Depends(get_session_id)):
-    """Returns JSON stats for the completed quiz."""
     session_data = get_active_session(session_id)
     if not session_data:
-        return JSONResponse({"error": "Session invalid or expired"}, status_code=401)
+        return JSONResponse({"error": "Session invalid"}, status_code=401)
 
     total = session_data.total_questions
     score = round((session_data.correct_count / total) * 100) if total > 0 else 0
-
     return {
         "correct_count": session_data.correct_count,
         "total_questions": total,
@@ -337,17 +344,13 @@ async def get_result_data(session_id: str = Depends(get_session_id)):
 
 @app.get("/result", response_class=HTMLResponse)
 async def result_page(request: Request):
-    """Serves the HTML shell for results."""
     return templates.TemplateResponse("result.html", {"request": request})
 
 
 @app.post("/api/reset")
 async def reset_session(response: Response, session_id: str = Depends(get_session_id)):
-    """Clears session data and cookie."""
     if session_id in sessions:
         del sessions[session_id]
-        logger.info(f"Reset session: {session_id}")
-
     response.delete_cookie(settings.SESSION_COOKIE_NAME)
     return {"status": "success"}
 
