@@ -20,17 +20,30 @@ class ArithmeticQuizGenerator(QuizGenerator):
     def generate(self, topic: str, count: int) -> List[Question]:
         questions = []
         for _ in range(count):
-            op = random.choice(["+", "-"])
+            op = random.choice(["+", "-", "*", "/"])
+
             if op == "+":
-                a = random.randint(1, 20)
-                b = random.randint(1, 20)
+                a = random.randint(0, 99)
+                b = random.randint(0, 99 - a)
                 answer = a + b
                 question_text = f"{a} + {b}"
-            else:
-                a = random.randint(5, 20)
-                b = random.randint(1, a)
+            elif op == "-":
+                a = random.randint(0, 99)
+                b = random.randint(0, 99)
                 answer = a - b
                 question_text = f"{a} - {b}"
+            elif op == "*":
+                a = random.randint(2, 15)
+                b = random.randint(2, 99 // a)
+                if random.choice([True, False]):
+                    a, b = b, a
+                answer = a * b
+                question_text = f"{a} × {b}"
+            else:  # op == "/"
+                divisor = random.randint(2, 12)
+                answer = random.randint(2, 12)
+                dividend = divisor * answer
+                question_text = f"{dividend} ÷ {divisor}"
 
             options = self._generate_options(str(answer))
             questions.append(
@@ -48,8 +61,7 @@ class ArithmeticQuizGenerator(QuizGenerator):
             if offset == 0:
                 continue
             distractor = correct_answer_int + offset
-            if distractor >= 0:
-                options.add(distractor)
+            options.add(distractor)
 
         str_options = [str(opt) for opt in options]
         random.shuffle(str_options)
