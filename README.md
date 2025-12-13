@@ -1,6 +1,6 @@
-# wlingo - A Vocabulary Quiz App
+# wlingo - A Simple Quiz App
 
-wlingo is a web application that helps you learn new vocabulary through a simple, interactive quiz.
+wlingo is a web application that helps you learn new vocabulary or math through a simple, interactive quiz.
 
 ## Getting Started
 
