@@ -1,14 +1,10 @@
 import logging
 import os
-import random
 import uuid
-import glob
-from abc import ABC, abstractmethod
 from datetime import datetime, timedelta
 from logging.handlers import RotatingFileHandler
-from typing import Dict, List, Optional, Any
+from typing import Dict, Optional
 
-import pandas as pd
 import uvicorn
 from fastapi import (
     Cookie,
@@ -21,47 +17,11 @@ from fastapi import (
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from pydantic import BaseModel
 
-
-# --- Models ---
-class Question(BaseModel):
-    word: str
-    translation: str
-    options: List[str]
-
-
-class SessionData(BaseModel):
-    prepared_questions: List[Question]
-    correct_count: int
-    total_questions: int
-    answers: List[Dict[str, Any]]
-    created_at: datetime
-    topic: str
-    mode: str = "standard"  # New: Track quiz mode (standard, review, etc.)
-
-
-class AnswerRecord(BaseModel):
-    word: str
-    user_answer: str
-    correct_answer: str
-    is_correct: bool
-    attempted: bool
-
-
-# --- Configuration ---
-class Settings:
-    PROJECT_NAME: str = "wlingo"
-    DEBUG: bool = False
-    LOG_DIR: str = "log"
-    LOG_FILE: str = "wlingo.log"
-    VOCAB_DIR: str = "vocabulary"
-    TEST_SIZE: int = 15
-    SESSION_COOKIE_NAME: str = "quiz_session_id"
-    SESSION_TIMEOUT_MINUTES: int = 120
-
-
-settings = Settings()
+from .config import settings
+from .models import AnswerRecord, SessionData
+from .quiz import QuizFactory
+from .vocabulary import VocabularyManager
 
 # --- Logging Setup ---
 if not os.path.exists(settings.LOG_DIR):
@@ -84,121 +44,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 sessions: Dict[str, SessionData] = {}
-
-
-# --- Service Layer: Vocabulary Management ---
-class VocabularyManager:
-    """Manages loading and accessing vocabulary sets."""
-
-    def __init__(self, directory: str):
-        self.directory = directory
-        self.vocab_sets: Dict[str, List[Dict[str, str]]] = {}
-        self.load_all()
-
-    def load_all(self):
-        self.vocab_sets = {}
-        if not os.path.exists(self.directory):
-            os.makedirs(self.directory)
-            logger.warning(f"Created directory {self.directory}. Please add CSV files.")
-            return
-
-        csv_files = glob.glob(os.path.join(self.directory, "*.csv"))
-        for file_path in csv_files:
-            try:
-                file_name = os.path.splitext(os.path.basename(file_path))[0]
-                df = pd.read_csv(file_path, encoding="utf-8")
-                if "word" in df.columns and "translation" in df.columns:
-                    self.vocab_sets[file_name] = df.to_dict("records")
-                    logger.info(f"Loaded {len(df)} words from {file_name}")
-                else:
-                    logger.error(f"Skipping {file_name}: Missing columns.")
-            except Exception as e:
-                logger.error(f"Failed to load {file_path}: {e}")
-
-        if not self.vocab_sets:
-            logger.warning("No CSV files found. Loading dummy data.")
-            self.vocab_sets["default_dummy"] = [
-                {"word": "Hund", "translation": "dog"},
-                {"word": "Katze", "translation": "cat"},
-                {"word": "Baum", "translation": "tree"},
-                {"word": "Haus", "translation": "house"},
-                {"word": "Wasser", "translation": "water"},
-            ]
-
-    def get_words(self, topic: str) -> List[Dict[str, str]]:
-        return self.vocab_sets.get(topic, [])
-
-    def get_topics(self) -> List[Dict[str, Any]]:
-        topics = []
-        for key, words in self.vocab_sets.items():
-            display_name = key.replace("_", " ").title()
-            topics.append({"id": key, "name": display_name, "count": len(words)})
-        topics.sort(key=lambda x: x["name"])
-        return topics
-
-
-vocab_manager = VocabularyManager(settings.VOCAB_DIR)
-
-
-# --- Strategy Pattern: Quiz Generators ---
-class QuizGenerator(ABC):
-    """Abstract Base Class for different quiz generation strategies."""
-
-    @abstractmethod
-    def generate(self, topic: str, count: int) -> List[Question]:
-        pass
-
-    def _generate_options(
-        self, correct_translation: str, all_words: List[Dict[str, str]]
-    ) -> List[str]:
-        """Helper to generate random distractors."""
-        all_translations = {w["translation"] for w in all_words}
-        all_translations.discard(correct_translation)
-
-        num_options = 3
-        if len(all_translations) < num_options:
-            incorrect = list(all_translations)
-            while len(incorrect) < num_options:
-                incorrect.append(f"Option {len(incorrect)+1}")
-        else:
-            incorrect = random.sample(list(all_translations), num_options)
-
-        options = [correct_translation] + incorrect
-        random.shuffle(options)
-        return options
-
-
-class RandomQuizGenerator(QuizGenerator):
-    """Standard mode: Randomly selects N words from the topic."""
-
-    def generate(self, topic: str, count: int) -> List[Question]:
-        word_list = vocab_manager.get_words(topic)
-        if not word_list:
-            return []
-
-        selected_words = random.sample(word_list, min(count, len(word_list)))
-
-        return [
-            Question(
-                word=item["word"],
-                translation=item["translation"],
-                options=self._generate_options(item["translation"], word_list),
-            )
-            for item in selected_words
-        ]
-
-
-class QuizFactory:
-    """Factory to select the appropriate generator."""
-
-    @staticmethod
-    def create(mode: str) -> QuizGenerator:
-        # In the future, you can add "review", "hard", "ai_generated" modes here
-        if mode == "standard":
-            return RandomQuizGenerator()
-        else:
-            # Fallback
-            return RandomQuizGenerator()
+vocab_manager = VocabularyManager(f"{settings.VOCAB_DIR}")
 
 
 # --- Dependencies ---
@@ -228,8 +74,6 @@ async def startup_event():
 
 
 # --- Routes ---
-
-
 @app.get("/api/topics")
 async def get_topics():
     return vocab_manager.get_topics()
@@ -253,7 +97,7 @@ async def start_quiz_session(
         topic = topics[0]["id"] if topics else "default_dummy"
 
     # --- Use Factory to generate questions ---
-    generator = QuizFactory.create(mode)
+    generator = QuizFactory.create(mode, vocab_manager)
     prepared_questions = generator.generate(topic, settings.TEST_SIZE)
 
     new_id = str(uuid.uuid4())
@@ -376,4 +220,4 @@ async def reset_session(response: Response, session_id: str = Depends(get_sessio
 
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=settings.DEBUG)
+    uvicorn.run("wlingo.main:app", host="0.0.0.0", port=8000, reload=settings.DEBUG)

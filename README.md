@@ -54,13 +54,13 @@ If you prefer using Docker, you can build and run a container.
 1.  **Build the Docker Image:**
 
     ```bash
-    docker build -t wlingo-app .
+    docker build -t wlingo .
     ```
 
 2.  **Run the Container:**
 
     ```bash
-    docker run -d -p 8000:8000 --name wlingo-instance wlingo-app
+    docker run -d -p 8000:8000 --name wlingo-instance wlingo
     ```
 
 ### 3. Accessing the Application

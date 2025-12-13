@@ -10,13 +10,14 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the application code and data
-COPY src/main.py .
-COPY src/templates templates/
 COPY src/static static/
+COPY src/wlingo wlingo/
+COPY src/templates templates/
 COPY src/vocabulary vocabulary/
 
 # Expose the port Uvicorn will run on
 EXPOSE 8000
 
+ENV PYTHONPATH=src
 # Command to run the application using Uvicorn
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
+CMD ["uvicorn", "wlingo.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
