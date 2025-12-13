@@ -165,7 +165,13 @@ async def display_question_page(
     if index >= session_data.total_questions:
         return RedirectResponse(url="/result", status_code=302)
     return templates.TemplateResponse(
-        "quiz.html", {"request": request, "current_index": index}
+        "quiz.html",
+        {
+            "request": request,
+            "current_index": index,
+            "mode": session_data.mode,
+            "topic": session_data.topic,
+        },
     )
 
 

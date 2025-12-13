@@ -4,14 +4,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vocabulary Quiz</title>
+    <title>{{ topic|capitalize }} Quiz</title>
     <link href="/static/style.css" rel="stylesheet">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 
 <body>
     <div class="container">
-        <h1>Vocabulary Quiz</h1>
+        <h1>{{ topic|capitalize }} Quiz</h1>
 
         <div id="progress-container">
             Question <span id="current-q"></span> of <span id="total-q"></span>
@@ -20,8 +20,10 @@
         <hr>
 
         <div id="quiz-content">
-            <h2 id="word-display">Loading...</h2>
+            <h2 id="question-display">Loading...</h2>
+            {% if mode == 'standard' %}
             <button id="speak-btn">🔊 Listen</button>
+            {% endif %}
 
             <div id="options-container">
             </div>
@@ -35,22 +37,23 @@
         </div>
 
         <p class="tip">
-            <small>Tip: Use keys <strong>1-4</strong> to select, <strong>Enter</strong> for next, <strong>S</strong> to
-                speak.</small>
+            <small>Tip: Use keys <strong>1-4</strong> to select, <strong>Enter</strong> for next{% if mode == 'standard' %},
+                <strong>S</strong> to speak{% endif %}.</small>
         </p>
     </div>
 
     <script>
         $(document).ready(function () {
             const currentIndex = {{ current_index }};
-            
+            const mode = "{{ mode }}";
+
             let isAnswered = false;
-            let currentWordText = "";
+            let currentQuestionText = "";
 
             function speakWord() {
-                if ('speechSynthesis' in window && currentWordText) {
+                if ('speechSynthesis' in window && currentQuestionText) {
                     window.speechSynthesis.cancel();
-                    const utterance = new SpeechSynthesisUtterance(currentWordText);
+                    const utterance = new SpeechSynthesisUtterance(currentQuestionText);
                     utterance.rate = 0.9;
                     window.speechSynthesis.speak(utterance);
                 }
@@ -59,8 +62,8 @@
             function loadQuestion() {
                 $.get(`/api/quiz/${currentIndex}`)
                     .done(function (data) {
-                        $('#word-display').text(data.word);
-                        currentWordText = data.word; // Update current word
+                        $('#question-display').text(data.word);
+                        currentQuestionText = data.word; // Update current question text
 
                         $('#current-q').text(data.current_index + 1);
                         $('#total-q').text(data.total_questions);
@@ -92,7 +95,7 @@
                         }
                     })
                     .fail(function () {
-                        $('#word-display').text("Error loading question.");
+                        $('#question-display').text("Error loading question.");
                         console.error("Load failed");
                     });
             }
@@ -152,10 +155,12 @@
             }
 
             // --- Event Listeners ---
+            if (mode === 'standard') {
+                $('#speak-btn').on('click', function () {
+                    speakWord();
+                });
+            }
 
-            $('#speak-btn').on('click', function () {
-                speakWord();
-            });
 
             $(document).on('keydown', function (e) {
                 const key = e.key;
@@ -176,7 +181,7 @@
                     }
                 }
 
-                if (key.toLowerCase() === 's') {
+                if (key.toLowerCase() === 's' && mode === 'standard') {
                     speakWord();
                 }
             });
