@@ -61,7 +61,6 @@ class QuizFactory:
 
     @staticmethod
     def create(mode: str, vocab_manager: VocabularyManager) -> QuizGenerator:
-        # In the future, you can add "review", "hard", "ai_generated" modes here
         if mode == "standard":
             return RandomQuizGenerator(vocab_manager)
         else:

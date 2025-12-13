@@ -1,6 +1,7 @@
 import logging
 import os
 import uuid
+from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 from logging.handlers import RotatingFileHandler
 from typing import Dict, Optional
@@ -39,7 +40,20 @@ file_handler.setFormatter(
 )
 logger.addHandler(file_handler)
 
-app = FastAPI(title=settings.PROJECT_NAME, debug=settings.DEBUG)
+
+# --- Lifecycle ---
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    vocab_manager.load_all()
+    yield
+
+
+app = FastAPI(
+    title=settings.PROJECT_NAME,
+    debug=settings.DEBUG,
+    lifespan=lifespan,
+)
+
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
@@ -66,13 +80,6 @@ def get_active_session(session_id: str) -> Optional[SessionData]:
     return session
 
 
-# --- Lifecycle ---
-@app.on_event("startup")
-async def startup_event():
-    # Reloads vocab on startup (manager handles logic)
-    vocab_manager.load_all()
-
-
 # --- Routes ---
 @app.get("/api/topics")
 async def get_topics():
@@ -88,11 +95,10 @@ async def home(request: Request):
 async def start_quiz_session(
     response: Response,
     topic: str = Form(...),
-    mode: str = Form("standard"),  # Allow mode selection in future
+    mode: str = Form("standard"),
 ):
     # Validate topic exists
     if not vocab_manager.get_words(topic):
-        # Fallback to first available
         topics = vocab_manager.get_topics()
         topic = topics[0]["id"] if topics else "default_dummy"
 

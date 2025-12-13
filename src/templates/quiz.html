@@ -43,13 +43,13 @@
     <script>
         $(document).ready(function () {
             const currentIndex = {{ current_index }};
+            
             let isAnswered = false;
-            let currentWordText = ""; // Store the word for audio
+            let currentWordText = "";
 
-            // --- Voice Function ---
             function speakWord() {
                 if ('speechSynthesis' in window && currentWordText) {
-                    window.speechSynthesis.cancel(); // Stop previous audio
+                    window.speechSynthesis.cancel();
                     const utterance = new SpeechSynthesisUtterance(currentWordText);
                     utterance.rate = 0.9;
                     window.speechSynthesis.speak(utterance);

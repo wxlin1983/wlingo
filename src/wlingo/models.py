@@ -18,7 +18,7 @@ class SessionData(BaseModel):
     answers: List[Dict[str, Any]]
     created_at: datetime
     topic: str
-    mode: str = "standard"  # New: Track quiz mode (standard, review, etc.)
+    mode: str = "standard"
 
 
 class AnswerRecord(BaseModel):
