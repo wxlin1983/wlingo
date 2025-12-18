@@ -46,6 +46,7 @@
         $(document).ready(function () {
             const currentIndex = {{ current_index }};
             const mode = "{{ mode }}";
+            const topic = "{{ topic }}";
 
             let isAnswered = false;
             let currentQuestionText = "";
@@ -54,6 +55,13 @@
                 if ('speechSynthesis' in window && currentQuestionText) {
                     window.speechSynthesis.cancel();
                     const utterance = new SpeechSynthesisUtterance(currentQuestionText);
+                    const langMap = {
+                        "English": "en-US",
+                        "Korean": "ko-KR"
+                    };
+                    if (topic in langMap) {
+                        utterance.lang = langMap[topic];
+                    }
                     utterance.rate = 0.9;
                     window.speechSynthesis.speak(utterance);
                 }
