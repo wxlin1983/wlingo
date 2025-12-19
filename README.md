@@ -1,6 +1,15 @@
 # wlingo - A Simple Quiz App
 
-wlingo is a web application that helps you learn new vocabulary or math through a simple, interactive quiz.
+Wlingo is a simple and intuitive web application designed to help you learn new vocabulary or practice arithmetic through interactive quizzes. It's built with FastAPI and provides a clean, user-friendly interface.
+
+## Features
+
+- **Multiple Quiz Modes:** Choose between vocabulary quizzes from various topics or test your skills with arithmetic problems.
+- **Customizable Vocabulary:** Easily add your own vocabulary sets by creating simple CSV files.
+- **Interactive Quizzes:** Engage with a clean and simple quiz interface.
+- **REST API:** Access quiz data and topics through a RESTful API.
+- **API Documentation:** Explore and test the API with the automatically generated Swagger UI documentation.
+- **Containerized Deployment:** Run the application in a Docker container for easy deployment.
 
 ## Getting Started
 
@@ -39,10 +48,10 @@ pip install -r requirements.txt
 
 #### Without Docker
 
-To run the app directly, use `uvicorn`:
+To run the app directly, you'll need to set the `PYTHONPATH` to include the `src` directory.
 
 ```bash
-uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
+PYTHONPATH=src uvicorn wlingo.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 The `--reload` flag automatically restarts the server when you make code changes.
@@ -70,12 +79,25 @@ Once the server is running, you can access the application in your web browser:
 -   **Start Quiz:** [http://localhost:8000](http://localhost:8000)
 -   **API Docs (Swagger UI):** [http://localhost:8000/docs](http://localhost:8000/docs)
 
-## 🎨 Customization
+## Customization
 
-To use your own set of vocabulary words, simply edit the `src/vocabulary/words.csv` file. The format is a simple CSV with two columns: `word` and `translation`.
+### Adding Vocabulary Topics
 
-| word  | translation |
-| :---- | :---------- |
-| Hund  | dog         |
-| Katze | cat         |
-| Baum  | tree        |
+You can add your own vocabulary topics by creating `.csv` files in the `src/vocabulary/` directory. Each file represents a new topic, and the filename (without the extension) will be used as the topic name.
+
+The CSV file must contain `word` and `translation` columns.
+
+**Example: `src/vocabulary/Spanish.csv`**
+
+```csv
+word,translation
+hola,hello
+adiós,goodbye
+gracias,thank you
+```
+
+The application will automatically load the new topics when it starts.
+
+### Configuration
+
+You can customize the application's behavior by modifying the settings in `src/wlingo/config.py`. This file contains settings for the session timeout, test size, logging, and more.
