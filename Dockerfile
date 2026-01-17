@@ -16,8 +16,8 @@ COPY src/templates templates/
 COPY src/vocabulary vocabulary/
 
 # Expose the port Uvicorn will run on
-EXPOSE 8000
+EXPOSE 8002
 
 ENV PYTHONPATH=src
 # Command to run the application using Uvicorn
-CMD ["uvicorn", "wlingo.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
+CMD ["uvicorn", "wlingo.main:app", "--host", "0.0.0.0", "--port", "8002", "--workers", "4"]
