@@ -35,14 +35,17 @@
         </div>
 
         <div class="nav-area">
-            <button id="next-btn">Next Question >></button>
-            <a href="{{ request.scope.get('root_path', '') }}/result" id="finish-btn">See Results</a>
+            <button id="cancel-btn">✕ Cancel</button>
+            <div>
+                <button id="next-btn">Next Question >></button>
+                <a href="{{ request.scope.get('root_path', '') }}/result" id="finish-btn">See Results</a>
+            </div>
         </div>
 
         <p class="tip">
             <small>Tip: Use keys <strong>1-4</strong> to select, <strong>Enter</strong> for next{% if mode == 'standard'
                 %},
-                <strong>S</strong> to speak{% endif %}.</small>
+                <strong>S</strong> to speak{% endif %}, <strong>Esc</strong> to cancel.</small>
         </p>
     </div>
 
@@ -201,6 +204,17 @@
 
             $('#next-btn').on('click', goToNext);
 
+            function cancelQuiz() {
+                $.post(ROOT_PATH + '/api/reset').always(function () {
+                    window.location.href = ROOT_PATH + '/';
+                });
+            }
+
+            $('#cancel-btn').on('click', cancelQuiz);
+
+            $(document).on('keydown.cancel', function (e) {
+                if (e.key === 'Escape') cancelQuiz();
+            });
 
             loadQuestion();
         });
