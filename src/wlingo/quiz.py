@@ -10,14 +10,24 @@ class QuizGenerator(ABC):
     """Abstract Base Class for different quiz generation strategies."""
 
     @abstractmethod
-    def generate(self, topic: str, count: int) -> List[Question]:
+    def generate(
+        self,
+        topic: str,
+        count: int,
+        word_weights: Optional[Dict[str, int]] = None,
+    ) -> List[Question]:
         pass
 
 
 class ArithmeticQuizGenerator(QuizGenerator):
     """Generates arithmetic quizzes for elementary school kids."""
 
-    def generate(self, topic: str, count: int) -> List[Question]:
+    def generate(
+        self,
+        topic: str,
+        count: int,
+        word_weights: Optional[Dict[str, int]] = None,
+    ) -> List[Question]:
         questions = []
         for _ in range(count):
             op = random.choice(["+", "-", "*", "/"])
@@ -74,12 +84,21 @@ class RandomQuizGenerator(QuizGenerator):
     def __init__(self, vocab_manager: VocabularyManager):
         self.vocab_manager = vocab_manager
 
-    def generate(self, topic: str, count: int) -> List[Question]:
+    def generate(
+        self,
+        topic: str,
+        count: int,
+        word_weights: Optional[Dict[str, int]] = None,
+    ) -> List[Question]:
         word_list = self.vocab_manager.get_words(topic)
         if not word_list:
             return []
 
-        selected_words = random.sample(word_list, min(count, len(word_list)))
+        count = min(count, len(word_list))
+        if word_weights:
+            selected_words = self._weighted_sample(word_list, word_weights, count)
+        else:
+            selected_words = random.sample(word_list, count)
 
         return [
             Question(
@@ -89,6 +108,29 @@ class RandomQuizGenerator(QuizGenerator):
             )
             for item in selected_words
         ]
+
+    def _weighted_sample(
+        self,
+        word_list: List[Dict[str, str]],
+        word_weights: Dict[str, int],
+        k: int,
+    ) -> List[Dict[str, str]]:
+        """Weighted sampling without replacement. Wrong-answer words get a boost."""
+        pool = list(word_list)
+        weights = [1 + min(word_weights.get(item["word"], 0), 3) for item in pool]
+        selected = []
+        for _ in range(k):
+            total = sum(weights)
+            r = random.uniform(0, total)
+            cumulative = 0.0
+            for i, w in enumerate(weights):
+                cumulative += w
+                if r < cumulative:
+                    selected.append(pool[i])
+                    pool.pop(i)
+                    weights.pop(i)
+                    break
+        return selected
 
     def _generate_options(
         self, correct_translation: str, all_words: List[Dict[str, str]]

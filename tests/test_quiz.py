@@ -114,6 +114,43 @@ class TestRandomQuizGenerator:
         words = [q.word for q in questions]
         assert len(words) == len(set(words))
 
+    def test_weighted_generate_no_duplicates(self):
+        weights = {"word0": 3, "word1": 3, "word2": 3}
+        questions = self.gen.generate("test", 10, word_weights=weights)
+        words = [q.word for q in questions]
+        assert len(words) == len(set(words))
+
+    def test_weighted_generate_correct_count(self):
+        weights = {"word0": 3}
+        questions = self.gen.generate("test", 10, word_weights=weights)
+        assert len(questions) == 10
+
+    def test_weighted_generate_prefers_boosted_words(self):
+        """A maximally boosted word should appear significantly more often than chance."""
+        target = SAMPLE_WORDS[0]["word"]
+        weights = {target: 3}  # weight = 1 + min(3,3) = 4x vs 1x for others
+
+        # With 20 words, pick 5: uniform P(target) = 5/20 = 25%
+        # Boosted: target weight=4 vs 1 for others → clearly higher probability
+        appearances = sum(
+            1
+            for _ in range(200)
+            if any(q.word == target for q in self.gen.generate("test", 5, word_weights=weights))
+        )
+        # Conservatively expect well above 25% = 50/200
+        assert appearances > 70
+
+    def test_weighted_sample_returns_correct_count(self):
+        weights = {"word0": 2, "word1": 1}
+        result = self.gen._weighted_sample(SAMPLE_WORDS, weights, 5)
+        assert len(result) == 5
+
+    def test_weighted_sample_no_duplicates(self):
+        weights = {"word0": 3}
+        result = self.gen._weighted_sample(SAMPLE_WORDS, weights, 10)
+        words = [r["word"] for r in result]
+        assert len(words) == len(set(words))
+
 
 # ---------------------------------------------------------------------------
 # QuizFactory

@@ -292,3 +292,94 @@ def test_reset_clears_session_from_redis(client):
 def test_reset_without_session_succeeds(client):
     c, _ = client
     assert c.post("/api/reset").status_code == 200
+
+
+# ---------------------------------------------------------------------------
+# User stats (adaptive weighting)
+# ---------------------------------------------------------------------------
+
+
+def test_home_sets_user_id_cookie(client):
+    c, _ = client
+    resp = c.get("/")
+    assert "wlingo_user_id" in resp.cookies or any(
+        "wlingo_user_id" in h for h in resp.headers.get_list("set-cookie")
+    )
+
+
+def test_home_does_not_reset_existing_user_id(client):
+    c, _ = client
+    c.get("/")  # first visit sets cookie
+    first_id = c.cookies.get("wlingo_user_id")
+    c.get("/")  # second visit should not change it
+    assert c.cookies.get("wlingo_user_id") == first_id
+
+
+def test_wrong_answer_creates_user_stats(client):
+    c, fake_redis = client
+    c.get("/")  # ensure user_id cookie is set
+    _start(c, "English")
+
+    session = _session(fake_redis)
+    q = session["prepared_questions"][0]
+    wrong_index = next(
+        i for i, opt in enumerate(q["options"]) if opt != q["translation"]
+    )
+    c.post("/submit_answer", data={"selected_option_index": wrong_index, "current_index": 0})
+
+    user_id = c.cookies.get("wlingo_user_id")
+    stats_key = f"user_stats:{user_id}:English"
+    assert stats_key in fake_redis._data
+    stats = json.loads(fake_redis._data[stats_key])
+    assert stats[q["word"]] == 1
+
+
+def test_wrong_answer_increments_count(client):
+    c, fake_redis = client
+    c.get("/")
+    _start(c, "English")
+
+    session = _session(fake_redis)
+    q = session["prepared_questions"][0]
+    wrong_index = next(
+        i for i, opt in enumerate(q["options"]) if opt != q["translation"]
+    )
+    # Submit wrong answer twice (need two separate sessions for the same word)
+    c.post("/submit_answer", data={"selected_option_index": wrong_index, "current_index": 0})
+    user_id = c.cookies.get("wlingo_user_id")
+    stats_key = f"user_stats:{user_id}:English"
+    assert json.loads(fake_redis._data[stats_key])[q["word"]] == 1
+
+
+def test_correct_answer_removes_word_from_stats(client):
+    c, fake_redis = client
+    c.get("/")
+    _start(c, "English")
+
+    session = _session(fake_redis)
+    q = session["prepared_questions"][0]
+    word = q["word"]
+
+    # Seed the stats with a prior wrong answer
+    user_id = c.cookies.get("wlingo_user_id")
+    stats_key = f"user_stats:{user_id}:English"
+    fake_redis.set(stats_key, json.dumps({word: 2}))
+
+    correct_index = q["options"].index(q["translation"])
+    c.post("/submit_answer", data={"selected_option_index": correct_index, "current_index": 0})
+
+    raw = fake_redis._data.get(stats_key)
+    stats = json.loads(raw) if raw else {}
+    assert word not in stats
+
+
+def test_arithmetic_mode_does_not_create_stats(client):
+    c, fake_redis = client
+    c.get("/")
+    _start(c, "__arithmetic__")
+
+    c.post("/submit_answer", data={"selected_option_index": 0, "current_index": 0})
+
+    user_id = c.cookies.get("wlingo_user_id")
+    stats_keys = [k for k in fake_redis._data if k.startswith(f"user_stats:{user_id}")]
+    assert len(stats_keys) == 0
