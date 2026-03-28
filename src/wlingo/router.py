@@ -40,7 +40,7 @@ def get_active_session(
     if not session_data:
         return None
 
-    session = SessionData.parse_raw(session_data)
+    session = SessionData.model_validate_json(session_data)
 
     if datetime.now() - session.created_at > timedelta(
         minutes=settings.SESSION_TIMEOUT_MINUTES
@@ -58,7 +58,7 @@ async def get_topics():
 
 @router.get("/", response_class=HTMLResponse)
 async def home(request: Request):
-    return templates.TemplateResponse("start.html", {"request": request})
+    return templates.TemplateResponse(request, "start.html")
 
 
 @router.post("/start", response_class=RedirectResponse)
@@ -143,9 +143,9 @@ def display_question_page(
     if index >= session_data.total_questions:
         return RedirectResponse(url="/result", status_code=302)
     return templates.TemplateResponse(
+        request,
         "quiz.html",
         {
-            "request": request,
             "current_index": index,
             "mode": session_data.mode,
             "topic": session_data.topic,
@@ -208,7 +208,7 @@ def get_result_data(session_data: SessionData = Depends(get_active_session)):
 
 @router.get("/result", response_class=HTMLResponse)
 async def result_page(request: Request):
-    return templates.TemplateResponse("result.html", {"request": request})
+    return templates.TemplateResponse(request, "result.html")
 
 
 @router.post("/api/reset")

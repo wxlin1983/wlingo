@@ -1,109 +1,59 @@
-# wlingo - A Simple Quiz App
+# wlingo
 
-Wlingo is a simple and intuitive web application designed to help you learn new vocabulary or practice arithmetic through interactive quizzes. It's built with FastAPI and provides a clean, user-friendly interface.
+A web-based quiz application for learning vocabulary and practicing arithmetic. Built with FastAPI and Redis.
 
 ## Features
 
-- **Multiple Quiz Modes:** Choose between vocabulary quizzes from various topics or test your skills with arithmetic problems.
-- **Customizable Vocabulary:** Easily add your own vocabulary sets by creating simple CSV files.
-- **Interactive Quizzes:** Engage with a clean and simple quiz interface.
-- **REST API:** Access quiz data and topics through a RESTful API.
-- **API Documentation:** Explore and test the API with the automatically generated Swagger UI documentation.
-- **Containerized Deployment:** Run the application in a Docker container for easy deployment.
+- **Vocabulary quizzes** — multiple-choice questions drawn from CSV word lists
+- **Arithmetic mode** — randomized addition, subtraction, multiplication, and division problems
+- **Keyboard shortcuts** — `1`–`4` to select an answer, `Enter` to advance, `S` to hear the word spoken aloud
+- **Text-to-speech** — pronunciation support for English and Korean
+- **Add your own topics** — drop a CSV file in `src/vocabulary/` and it's available on next start
+- **REST API** — all quiz data accessible via JSON endpoints
 
 ## Getting Started
-
-You can run this application either directly on your machine using Python or with Docker.
 
 ### Prerequisites
 
 - Python 3.11+
-- `uv` (or `pip`) for package installation
-- Docker (optional, for containerized deployment)
+- [`uv`](https://docs.astral.sh/uv/) for dependency management
+- Docker + Docker Compose (for containerized deployment)
+- A running Redis instance (handled automatically by Docker Compose)
 
-### 1. Installation & Setup
-
-First, clone the repository to your local machine:
-
-```bash
-git clone https://github.com/your-username/wlingo.git
-cd wlingo
-```
-
-Next, install the required Python packages. It is recommended to use a virtual environment.
+### Run with Docker Compose (recommended)
 
 ```bash
-# Create a virtual environment
-python -m venv .venv
-source .venv/bin/activate
-
-# Install dependencies using uv (faster)
-uv pip install -r requirements.txt
-
-# Or using pip
-pip install -r requirements.txt
+docker compose up --build
 ```
 
-### 2. Running the Application
+This starts the web app and Redis together. The app is available at:
 
-#### With Docker Compose (Recommended)
+- **http://localhost:8002**
 
-The easiest way to get the application and its Redis dependency running is with Docker Compose.
+To stop: `Ctrl+C`, or `docker compose down` if running detached (`-d`).
 
-1.  **Build and Run the Services:**
+### Run locally
 
-    Make sure you have Docker and Docker Compose installed, then run the following command from the project root:
-
-    ```bash
-    docker-compose up --build
-    ```
-
-    This will build the Docker image for the web app, pull the Redis image, and start both services. The `-d` flag can be added to run in detached mode.
-
-2.  **Stopping the Services:**
-
-    To stop the services, press `Ctrl+C` in the terminal where `docker-compose` is running, or run `docker-compose down` if you are in detached mode.
-
-#### Without Docker
-
-To run the app directly, you'll need to set the `PYTHONPATH` to include the `src` directory.
+Start a Redis instance, then:
 
 ```bash
-PYTHONPATH=src uvicorn wlingo.main:app --host 0.0.0.0 --port 8000 --reload
+uv sync
+cd src
+uvicorn wlingo.main:app --host 0.0.0.0 --port 8002 --reload
 ```
 
-The `--reload` flag automatically restarts the server when you make code changes.
+Open **http://localhost:8002** in your browser.
 
-#### With Docker
+## Running Tests
 
-If you prefer using Docker, you can build and run a container.
+```bash
+uv sync --extra test
+uv run pytest tests/ -v
+```
 
-1.  **Build the Docker Image:**
+## Adding Vocabulary Topics
 
-    ```bash
-    docker build -t wlingo .
-    ```
-
-2.  **Run the Container:**
-
-    ```bash
-    docker run -d -p 8000:8000 --name wlingo-instance wlingo
-    ```
-
-### 3. Accessing the Application
-
-Once the server is running, you can access the application in your web browser:
-
--   **Start Quiz:** [http://localhost:8000](http://localhost:8000)
--   **API Docs (Swagger UI):** [http://localhost:8000/docs](http://localhost:8000/docs)
-
-## Customization
-
-### Adding Vocabulary Topics
-
-You can add your own vocabulary topics by creating `.csv` files in the `src/vocabulary/` directory. Each file represents a new topic, and the filename (without the extension) will be used as the topic name.
-
-The CSV file must contain `word` and `translation` columns.
+Create a UTF-8 CSV file in `src/vocabulary/`. The filename becomes the topic name.
 
 **Example: `src/vocabulary/Spanish.csv`**
 
@@ -114,8 +64,31 @@ adiós,goodbye
 gracias,thank you
 ```
 
-The application will automatically load the new topics when it starts.
+The topic appears automatically on the next application start.
 
-### Configuration
+## Configuration
 
-You can customize the application's behavior by modifying the settings in `src/wlingo/config.py`. This file contains settings for the session timeout, test size, logging, and more.
+All settings are in [`src/wlingo/config.py`](src/wlingo/config.py):
+
+| Setting | Default | Description |
+|---|---|---|
+| `TEST_SIZE` | `15` | Number of questions per quiz |
+| `SESSION_TIMEOUT_MINUTES` | `120` | Redis session TTL |
+| `REDIS_URL` | `redis://localhost:6379/0` | Override via `REDIS_URL` env var |
+| `ROOT_PATH` | `""` | URL prefix for reverse-proxy deployments (e.g. `/wlingo`) |
+| `TEMPLATES_DIR` | `"templates"` | Jinja2 templates directory |
+| `STATIC_DIR` | `"static"` | Static files directory |
+| `VOCAB_DIR` | `"vocabulary"` | Vocabulary CSV directory |
+
+## API Endpoints
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/topics` | List available quiz topics |
+| `POST` | `/start` | Start a new quiz session |
+| `GET` | `/api/quiz/{index}` | Get question data (JSON) |
+| `POST` | `/submit_answer` | Submit an answer |
+| `GET` | `/api/result` | Get quiz results (JSON) |
+| `POST` | `/api/reset` | Clear the current session |
+
+Interactive API docs are available at **http://localhost:8002/docs**.
