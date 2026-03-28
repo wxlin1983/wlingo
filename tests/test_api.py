@@ -168,14 +168,18 @@ def test_quiz_page_with_valid_session_returns_200(client):
 
 def test_submit_answer_without_session_returns_401(client):
     c, _ = client
-    resp = c.post("/submit_answer", data={"selected_option_index": 0, "current_index": 0})
+    resp = c.post(
+        "/submit_answer", data={"selected_option_index": 0, "current_index": 0}
+    )
     assert resp.status_code == 401
 
 
 def test_submit_answer_returns_answer_record(client):
     c, fake_redis = client
     _start(c)
-    resp = c.post("/submit_answer", data={"selected_option_index": 0, "current_index": 0})
+    resp = c.post(
+        "/submit_answer", data={"selected_option_index": 0, "current_index": 0}
+    )
     assert resp.status_code == 200
     data = resp.json()
     assert "is_correct" in data
@@ -221,14 +225,18 @@ def test_submit_answer_twice_returns_400(client):
     c, _ = client
     _start(c)
     c.post("/submit_answer", data={"selected_option_index": 0, "current_index": 0})
-    resp = c.post("/submit_answer", data={"selected_option_index": 0, "current_index": 0})
+    resp = c.post(
+        "/submit_answer", data={"selected_option_index": 0, "current_index": 0}
+    )
     assert resp.status_code == 400
 
 
 def test_submit_invalid_option_index_returns_400(client):
     c, _ = client
     _start(c)
-    resp = c.post("/submit_answer", data={"selected_option_index": 99, "current_index": 0})
+    resp = c.post(
+        "/submit_answer", data={"selected_option_index": 99, "current_index": 0}
+    )
     assert resp.status_code == 400
 
 
@@ -325,7 +333,10 @@ def test_wrong_answer_creates_user_stats(client):
     wrong_index = next(
         i for i, opt in enumerate(q["options"]) if opt != q["translation"]
     )
-    c.post("/submit_answer", data={"selected_option_index": wrong_index, "current_index": 0})
+    c.post(
+        "/submit_answer",
+        data={"selected_option_index": wrong_index, "current_index": 0},
+    )
 
     user_id = c.cookies.get("wlingo_user_id")
     stats_key = f"user_stats:{user_id}:English"
@@ -345,7 +356,10 @@ def test_wrong_answer_increments_count(client):
         i for i, opt in enumerate(q["options"]) if opt != q["translation"]
     )
     # Submit wrong answer twice (need two separate sessions for the same word)
-    c.post("/submit_answer", data={"selected_option_index": wrong_index, "current_index": 0})
+    c.post(
+        "/submit_answer",
+        data={"selected_option_index": wrong_index, "current_index": 0},
+    )
     user_id = c.cookies.get("wlingo_user_id")
     stats_key = f"user_stats:{user_id}:English"
     assert json.loads(fake_redis._data[stats_key])[q["word"]] == 1
@@ -366,7 +380,10 @@ def test_correct_answer_removes_word_from_stats(client):
     fake_redis.set(stats_key, json.dumps({word: 2}))
 
     correct_index = q["options"].index(q["translation"])
-    c.post("/submit_answer", data={"selected_option_index": correct_index, "current_index": 0})
+    c.post(
+        "/submit_answer",
+        data={"selected_option_index": correct_index, "current_index": 0},
+    )
 
     raw = fake_redis._data.get(stats_key)
     stats = json.loads(raw) if raw else {}

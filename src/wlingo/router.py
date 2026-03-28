@@ -108,7 +108,9 @@ def start_quiz_session(
     else:  # mode is arithmetic
         generator = QuizFactory.create(mode)
 
-    prepared_questions = generator.generate(topic, settings.TEST_SIZE, word_weights=word_weights)
+    prepared_questions = generator.generate(
+        topic, settings.TEST_SIZE, word_weights=word_weights
+    )
 
     new_id = str(uuid.uuid4())
     session_data = SessionData(
@@ -235,7 +237,9 @@ def _update_user_stats(user_id: str, topic: str, word: str, is_correct: bool) ->
         stats[word] = stats.get(word, 0) + 1
 
     if stats:
-        redis_client.set(key, json.dumps(stats), ex=timedelta(days=settings.USER_STATS_TTL_DAYS))
+        redis_client.set(
+            key, json.dumps(stats), ex=timedelta(days=settings.USER_STATS_TTL_DAYS)
+        )
     else:
         redis_client.delete(key)
 
