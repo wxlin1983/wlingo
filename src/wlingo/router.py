@@ -2,7 +2,6 @@ import json
 import logging
 import uuid
 from datetime import datetime, timedelta
-from typing import Optional
 
 from fastapi import (
     APIRouter,
@@ -26,14 +25,14 @@ logger = logging.getLogger("wlingo")
 
 # --- Dependencies ---
 def get_session_id(
-    session_id: Optional[str] = Cookie(None, alias=settings.SESSION_COOKIE_NAME),
-) -> Optional[str]:
+    session_id: str | None = Cookie(None, alias=settings.SESSION_COOKIE_NAME),
+) -> str | None:
     return session_id
 
 
 def get_user_id(
-    user_id: Optional[str] = Cookie(None, alias=settings.USER_COOKIE_NAME),
-) -> Optional[str]:
+    user_id: str | None = Cookie(None, alias=settings.USER_COOKIE_NAME),
+) -> str | None:
     return user_id
 
 
@@ -43,7 +42,7 @@ def _user_stats_key(user_id: str, topic: str) -> str:
 
 def get_active_session(
     session_id: str = Depends(get_session_id),
-) -> Optional[SessionData]:
+) -> SessionData | None:
     if not session_id:
         return None
 
@@ -70,7 +69,7 @@ async def get_topics():
 @router.get("/", response_class=HTMLResponse)
 async def home(
     request: Request,
-    user_id: Optional[str] = Depends(get_user_id),
+    user_id: str | None = Depends(get_user_id),
 ):
     resp = templates.TemplateResponse(request, "start.html")
     if not user_id:
@@ -88,14 +87,14 @@ async def home(
 def start_quiz_session(
     request: Request,
     topic: str = Form(...),
-    user_id: Optional[str] = Depends(get_user_id),
+    user_id: str | None = Depends(get_user_id),
 ):
     mode = "standard"
     if topic == "__arithmetic__":
         mode = "arithmetic"
         topic = "Arithmetic"
 
-    word_weights = {}
+    word_weights: dict[str, int] = {}
     if mode == "standard":
         # Validate topic exists
         if not vocab_manager.get_words(topic):
@@ -188,7 +187,7 @@ def submit_answer(
     current_index: int = Form(...),
     session_id: str = Depends(get_session_id),
     session_data: SessionData = Depends(get_active_session),
-    user_id: Optional[str] = Depends(get_user_id),
+    user_id: str | None = Depends(get_user_id),
 ):
     if not session_data or not (0 <= current_index < session_data.total_questions):
         return JSONResponse({"error": "Invalid session"}, status_code=401)
@@ -228,7 +227,7 @@ def submit_answer(
 def _update_user_stats(user_id: str, topic: str, word: str, is_correct: bool) -> None:
     key = _user_stats_key(user_id, topic)
     raw = redis_client.get(key)
-    stats: dict = json.loads(raw) if raw else {}
+    stats: dict[str, int] = json.loads(raw) if raw else {}
 
     if is_correct:
         stats.pop(word, None)

@@ -1,23 +1,34 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Dict, List, Any
+from typing import TypedDict
 
 from pydantic import BaseModel
+
+
+class Word(TypedDict):
+    word: str
+    translation: str
+
+
+class Topic(TypedDict):
+    id: str
+    name: str
+    count: int
 
 
 # --- Models ---
 class Question(BaseModel):
     word: str
     translation: str
-    options: List[str]
+    options: list[str]
 
 
 class SessionData(BaseModel):
-    prepared_questions: List[Question]
+    prepared_questions: list[Question]
     correct_count: int
     total_questions: int
-    answers: List["AnswerRecord"]
+    answers: list[AnswerRecord]
     created_at: datetime
     topic: str
     mode: str = "standard"

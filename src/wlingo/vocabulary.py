@@ -1,9 +1,10 @@
 import glob
 import logging
 import os
-from typing import Any, Dict, List
 
 import pandas as pd
+
+from .models import Topic, Word
 
 logger = logging.getLogger(__name__)
 
@@ -12,12 +13,12 @@ logger = logging.getLogger(__name__)
 class VocabularyManager:
     """Manages loading and accessing vocabulary sets."""
 
-    def __init__(self, directory: str):
+    def __init__(self, directory: str) -> None:
         self.directory = directory
-        self.vocab_sets: Dict[str, List[Dict[str, str]]] = {}
+        self.vocab_sets: dict[str, list[Word]] = {}
         self.load_all()
 
-    def load_all(self):
+    def load_all(self) -> None:
         self.vocab_sets = {}
         if not os.path.exists(self.directory):
             os.makedirs(self.directory)
@@ -47,11 +48,11 @@ class VocabularyManager:
                 {"word": "Wasser", "translation": "water"},
             ]
 
-    def get_words(self, topic: str) -> List[Dict[str, str]]:
+    def get_words(self, topic: str) -> list[Word]:
         return self.vocab_sets.get(topic, [])
 
-    def get_topics(self) -> List[Dict[str, Any]]:
-        topics = []
+    def get_topics(self) -> list[Topic]:
+        topics: list[Topic] = []
         for key, words in self.vocab_sets.items():
             display_name = key.replace("_", " ").title()
             topics.append({"id": key, "name": display_name, "count": len(words)})

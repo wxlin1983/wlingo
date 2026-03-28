@@ -1,5 +1,6 @@
 import logging
 import os
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from logging.handlers import RotatingFileHandler
 
@@ -12,7 +13,7 @@ from .router import router
 
 
 # --- Logging Setup ---
-def setup_logging():
+def setup_logging() -> None:
     logger = logging.getLogger("wlingo")
     logger.setLevel(logging.INFO)
 
@@ -30,7 +31,7 @@ def setup_logging():
 
 # --- Lifecycle ---
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     vocab_manager.load_all()
     yield
 

@@ -1,7 +1,6 @@
 import random
 from abc import ABC, abstractmethod
-from typing import Dict, List, Optional
-from .models import Question
+from .models import Question, Word
 from .vocabulary import VocabularyManager
 
 
@@ -14,8 +13,8 @@ class QuizGenerator(ABC):
         self,
         topic: str,
         count: int,
-        word_weights: Optional[Dict[str, int]] = None,
-    ) -> List[Question]:
+        word_weights: dict[str, int] | None = None,
+    ) -> list[Question]:
         pass
 
 
@@ -26,8 +25,8 @@ class ArithmeticQuizGenerator(QuizGenerator):
         self,
         topic: str,
         count: int,
-        word_weights: Optional[Dict[str, int]] = None,
-    ) -> List[Question]:
+        word_weights: dict[str, int] | None = None,
+    ) -> list[Question]:
         questions = []
         for _ in range(count):
             op = random.choice(["+", "-", "*", "/"])
@@ -61,7 +60,7 @@ class ArithmeticQuizGenerator(QuizGenerator):
             )
         return questions
 
-    def _generate_options(self, correct_answer: str) -> List[str]:
+    def _generate_options(self, correct_answer: str) -> list[str]:
         """Helper to generate random distractors for arithmetic questions."""
         correct_answer_int = int(correct_answer)
         options = {correct_answer_int}
@@ -88,8 +87,8 @@ class RandomQuizGenerator(QuizGenerator):
         self,
         topic: str,
         count: int,
-        word_weights: Optional[Dict[str, int]] = None,
-    ) -> List[Question]:
+        word_weights: dict[str, int] | None = None,
+    ) -> list[Question]:
         word_list = self.vocab_manager.get_words(topic)
         if not word_list:
             return []
@@ -111,10 +110,10 @@ class RandomQuizGenerator(QuizGenerator):
 
     def _weighted_sample(
         self,
-        word_list: List[Dict[str, str]],
-        word_weights: Dict[str, int],
+        word_list: list[Word],
+        word_weights: dict[str, int],
         k: int,
-    ) -> List[Dict[str, str]]:
+    ) -> list[Word]:
         """Weighted sampling without replacement. Wrong-answer words get a boost."""
         pool = list(word_list)
         weights = [1 + min(word_weights.get(item["word"], 0), 3) for item in pool]
@@ -133,8 +132,8 @@ class RandomQuizGenerator(QuizGenerator):
         return selected
 
     def _generate_options(
-        self, correct_translation: str, all_words: List[Dict[str, str]]
-    ) -> List[str]:
+        self, correct_translation: str, all_words: list[Word]
+    ) -> list[str]:
         """Helper to generate random distractors."""
         all_translations = {w["translation"] for w in all_words}
         all_translations.discard(correct_translation)
@@ -157,7 +156,7 @@ class QuizFactory:
 
     @staticmethod
     def create(
-        mode: str, vocab_manager: Optional[VocabularyManager] = None
+        mode: str, vocab_manager: VocabularyManager | None = None
     ) -> QuizGenerator:
         if mode == "arithmetic":
             return ArithmeticQuizGenerator()
