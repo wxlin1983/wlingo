@@ -39,4 +39,3 @@ class AnswerRecord(BaseModel):
     user_answer: str
     correct_answer: str
     is_correct: bool
-    attempted: bool  # False when a session is cancelled before this question is reached

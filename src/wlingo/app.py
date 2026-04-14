@@ -1,7 +1,5 @@
 import logging
 import os
-from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
 from logging.handlers import RotatingFileHandler
 
 from fastapi import FastAPI
@@ -18,8 +16,7 @@ def setup_logging() -> None:
         return
     logger.setLevel(logging.INFO)
 
-    if not os.path.exists(settings.LOG_DIR):
-        os.makedirs(settings.LOG_DIR, exist_ok=True)
+    os.makedirs(settings.LOG_DIR, exist_ok=True)
     log_path = os.path.join(settings.LOG_DIR, settings.LOG_FILE)
     file_handler = RotatingFileHandler(log_path, maxBytes=5_000_000, backupCount=3)
     file_handler.setFormatter(
@@ -30,19 +27,12 @@ def setup_logging() -> None:
     logging.basicConfig(level=logging.INFO)
 
 
-# --- Lifecycle ---
-@asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    yield
-
-
 # --- App Factory ---
 def create_app() -> FastAPI:
     setup_logging()
     app = FastAPI(
         title=settings.PROJECT_NAME,
         debug=settings.DEBUG,
-        lifespan=lifespan,
         root_path=settings.ROOT_PATH,
     )
 

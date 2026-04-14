@@ -150,10 +150,24 @@ def test_get_question_api_out_of_range_returns_404(client):
     assert c.get("/api/quiz/9999").status_code == 404
 
 
+def test_get_question_api_negative_index_returns_404(client):
+    c, _ = client
+    _start(c)
+    assert c.get("/api/quiz/-1").status_code == 404
+
+
 def test_quiz_page_with_valid_session_returns_200(client):
     c, _ = client
     _start(c)
     assert c.get("/quiz/0").status_code == 200
+
+
+def test_quiz_page_negative_index_redirects_to_result(client):
+    c, _ = client
+    _start(c)
+    resp = c.get("/quiz/-1", follow_redirects=False)
+    assert resp.status_code == 302
+    assert resp.headers["location"] == "/result"
 
 
 # ---------------------------------------------------------------------------
@@ -180,7 +194,6 @@ def test_submit_answer_returns_answer_record(client):
     assert "is_correct" in data
     assert "correct_answer" in data
     assert "user_answer" in data
-    assert data["attempted"] is True
 
 
 def test_submit_correct_answer_marked_correctly(client):
@@ -512,3 +525,33 @@ def test_result_api_with_zero_questions_returns_zero_score(client):
     data = resp.json()
     assert data["score_percentage"] == 0
     assert data["total_questions"] == 0
+
+
+# ---------------------------------------------------------------------------
+# RandomQuizGenerator._weighted_sample
+# ---------------------------------------------------------------------------
+
+
+def test_weighted_sample_returns_exact_count():
+    from wlingo.quiz import RandomQuizGenerator
+    from wlingo.globals import vocab_manager
+
+    gen = RandomQuizGenerator(vocab_manager)
+    word_list = vocab_manager.get_words(vocab_manager.get_topics()[0]["id"])
+    k = min(5, len(word_list))
+    # Give every word a heavy weight to exercise the weighted path
+    weights = {w["word"]: 3 for w in word_list}
+    result = gen._weighted_sample(word_list, weights, k)
+    assert len(result) == k
+
+
+def test_weighted_sample_no_duplicates():
+    from wlingo.quiz import RandomQuizGenerator
+    from wlingo.globals import vocab_manager
+
+    gen = RandomQuizGenerator(vocab_manager)
+    word_list = vocab_manager.get_words(vocab_manager.get_topics()[0]["id"])
+    k = min(5, len(word_list))
+    weights = {w["word"]: 3 for w in word_list}
+    result = gen._weighted_sample(word_list, weights, k)
+    assert len({w["word"] for w in result}) == k

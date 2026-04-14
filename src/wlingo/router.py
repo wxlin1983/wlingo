@@ -164,7 +164,7 @@ def display_question_page(
 ):
     if not session_data:
         return RedirectResponse(url="/", status_code=302)
-    if index >= session_data.total_questions:
+    if index < 0 or index >= session_data.total_questions:
         return RedirectResponse(url="/result", status_code=302)
     return templates.TemplateResponse(
         request,
@@ -205,7 +205,6 @@ def submit_answer(
         user_answer=user_answer_str,
         correct_answer=current_q.translation,
         is_correct=is_correct,
-        attempted=True,
     )
     session_data.answers.append(record)
     redis_client.set(
