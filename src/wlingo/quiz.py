@@ -30,6 +30,10 @@ class RandomQuizGenerator(QuizGenerator):
         count: int,
         word_weights: dict[str, int] | None = None,
     ) -> list[Question]:
+        """Generate `count` questions for `topic`.
+
+        word_weights maps word → wrong-answer count; higher count raises selection probability.
+        """
         word_list = self.vocab_manager.get_words(topic)
         if not word_list:
             return []
@@ -77,7 +81,7 @@ class RandomQuizGenerator(QuizGenerator):
     def _generate_options(
         self, correct_translation: str, all_words: list[Word]
     ) -> list[str]:
-        """Helper to generate random distractors."""
+        """Return 4 shuffled options: the correct answer plus 3 random distractors."""
         all_translations = {w["translation"] for w in all_words}
         all_translations.discard(correct_translation)
 
@@ -85,6 +89,7 @@ class RandomQuizGenerator(QuizGenerator):
         if len(all_translations) < num_options:
             incorrect = list(all_translations)
             while len(incorrect) < num_options:
+                # Pad with synthetic placeholders when vocab is too small for real distractors
                 incorrect.append(f"Option {len(incorrect) + 1}")
         else:
             incorrect = random.sample(list(all_translations), num_options)

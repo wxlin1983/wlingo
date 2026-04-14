@@ -13,7 +13,7 @@ from .router import router
 def setup_logging() -> None:
     logger = logging.getLogger("wlingo")
     if logger.handlers:
-        return
+        return  # already configured; guard against double-registration in tests
     logger.setLevel(logging.INFO)
 
     os.makedirs(settings.LOG_DIR, exist_ok=True)

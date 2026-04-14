@@ -357,21 +357,45 @@ def test_wrong_answer_creates_user_stats(client):
 def test_wrong_answer_increments_count(client):
     c, fake_redis = client
     c.get("/")
-    _start(c, "English")
+    user_id = c.cookies.get("wlingo_user_id")
 
+    # First session: wrong answer → count becomes 1
+    _start(c, "English")
     session = _session(fake_redis, c)
     q = session["prepared_questions"][0]
+    word = q["word"]
     wrong_index = next(
         i for i, opt in enumerate(q["options"]) if opt != q["translation"]
     )
-    # Submit wrong answer twice (need two separate sessions for the same word)
     c.post(
         "/submit_answer",
         data={"selected_option_index": wrong_index, "current_index": 0},
     )
-    user_id = c.cookies.get("wlingo_user_id")
+
     stats_key = f"user_stats:{user_id}:English"
-    assert json.loads(fake_redis._data[stats_key])[q["word"]] == 1
+    assert json.loads(fake_redis._data[stats_key])[word] == 1
+
+    # Seed a second session where the same word appears first
+    second_q = Question(word=word, translation=q["translation"], options=q["options"])
+    session2 = SessionData(
+        prepared_questions=[second_q],
+        correct_count=0,
+        total_questions=1,
+        answers=[],
+        created_at=datetime.now(),
+        topic="English",
+        mode="standard",
+    )
+    session2_id = str(uuid.uuid4())
+    fake_redis.set(session2_id, session2.model_dump_json())
+    c.cookies.set(settings.SESSION_COOKIE_NAME, session2_id)
+
+    # Wrong answer again → count increments to 2
+    c.post(
+        "/submit_answer",
+        data={"selected_option_index": wrong_index, "current_index": 0},
+    )
+    assert json.loads(fake_redis._data[stats_key])[word] == 2
 
 
 def test_correct_answer_removes_word_from_stats(client):

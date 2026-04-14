@@ -1,6 +1,6 @@
 # Stage 1: run tests
 # If any test fails, the build stops here.
-FROM python:3.11-slim AS test
+FROM python:3.13-slim AS test
 
 WORKDIR /app
 
@@ -16,7 +16,7 @@ RUN pytest tests/ -v && touch /tmp/tests-passed
 
 # Stage 2: production image
 # Only runtime code is copied — no test files or test dependencies.
-FROM python:3.11-slim
+FROM python:3.13-slim
 
 WORKDIR /app
 

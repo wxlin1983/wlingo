@@ -79,7 +79,7 @@ async def home(
             value=str(uuid.uuid4()),
             httponly=True,
             samesite="Lax",
-            max_age=settings.USER_STATS_TTL_DAYS * 86400,
+            max_age=settings.USER_STATS_TTL_DAYS * 86400,  # days → seconds
         )
     return resp
 
@@ -91,7 +91,9 @@ def start_quiz_session(
     user_id: str | None = Depends(get_user_id),
 ):
     mode = "standard"
-    word_weights: dict[str, int] = {}
+    word_weights: dict[str, int] = (
+        {}
+    )  # populated from Redis if user has prior wrong answers
     # Validate topic exists
     if not vocab_manager.get_words(topic):
         topics = vocab_manager.get_topics()
@@ -145,6 +147,7 @@ def get_question_data(
         return JSONResponse({"error": "Index error"}, status_code=404)
 
     current_q = session_data.prepared_questions[index]
+    # None when not yet answered; lets the frontend show review state for revisited questions
     record = session_data.answers[index] if index < len(session_data.answers) else None
 
     return {
@@ -181,7 +184,7 @@ def display_question_page(
 def submit_answer(
     selected_option_index: int = Form(...),
     current_index: int = Form(...),
-    session_id: str = Depends(get_session_id),
+    session_id: str | None = Depends(get_session_id),
     session_data: SessionData | None = Depends(get_active_session),
     user_id: str | None = Depends(get_user_id),
 ):
@@ -262,7 +265,7 @@ async def result_page(request: Request):
 @router.post("/api/reset")
 def reset_session(
     response: Response,
-    session_id: str = Depends(get_session_id),
+    session_id: str | None = Depends(get_session_id),
 ):
     if session_id:
         redis_client.delete(session_id)
