@@ -51,7 +51,9 @@ class ArithmeticQuizGenerator(QuizGenerator):
             else:  # op == "/"
                 divisor = random.randint(2, 12)
                 answer = random.randint(2, 12)
-                dividend = divisor * answer
+                dividend = (
+                    divisor * answer
+                )  # pick quotient first to guarantee whole-number result
                 question_text = f"{dividend} ÷ {divisor}"
 
             options = self._generate_options(str(answer))
@@ -116,7 +118,9 @@ class RandomQuizGenerator(QuizGenerator):
     ) -> list[Word]:
         """Weighted sampling without replacement. Wrong-answer words get a boost."""
         pool = list(word_list)
-        weights = [1 + min(word_weights.get(item["word"], 0), 3) for item in pool]
+        weights = [
+            1 + min(word_weights.get(item["word"], 0), 3) for item in pool
+        ]  # cap boost at 3 to prevent a single word from dominating
         selected = []
         for _ in range(k):
             total = sum(weights)

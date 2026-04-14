@@ -52,6 +52,7 @@ def get_active_session(
 
     session = SessionData.model_validate_json(session_data)
 
+    # Belt-and-suspenders check alongside the Redis TTL; cleans up stale data on access
     if datetime.now() - session.created_at > timedelta(
         minutes=settings.SESSION_TIMEOUT_MINUTES
     ):
@@ -90,7 +91,7 @@ def start_quiz_session(
     user_id: str | None = Depends(get_user_id),
 ):
     mode = "standard"
-    if topic == "__arithmetic__":
+    if topic == "__arithmetic__":  # sentinel value; no CSV-backed vocab needed
         mode = "arithmetic"
         topic = "Arithmetic"
 
@@ -241,7 +242,9 @@ def _update_user_stats(user_id: str, topic: str, word: str, is_correct: bool) ->
             key, json.dumps(stats), ex=timedelta(days=settings.USER_STATS_TTL_DAYS)
         )
     else:
-        redis_client.delete(key)
+        redis_client.delete(
+            key
+        )  # avoid persisting empty dicts when all words are mastered
 
 
 @router.get("/api/result")
