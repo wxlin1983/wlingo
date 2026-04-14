@@ -129,8 +129,6 @@
                         $('.option-btn').each(function () {
                             const $btn = $(this);
 
-                            const btnText = $btn.text().replace(/^\d+\s/, '');
-
                             if ($btn.text().includes(result.correct_answer)) {
                                 $btn.addClass('correct');
                             }

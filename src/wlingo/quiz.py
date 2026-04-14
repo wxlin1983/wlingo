@@ -103,4 +103,6 @@ class QuizFactory:
     ) -> QuizGenerator:
         if not vocab_manager:
             raise ValueError("VocabularyManager is required for standard mode")
+        if mode != "standard":
+            raise ValueError(f"Unknown quiz mode: {mode!r}")
         return RandomQuizGenerator(vocab_manager)

@@ -8,13 +8,14 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
 from .config import settings
-from .globals import vocab_manager
 from .router import router
 
 
 # --- Logging Setup ---
 def setup_logging() -> None:
     logger = logging.getLogger("wlingo")
+    if logger.handlers:
+        return
     logger.setLevel(logging.INFO)
 
     if not os.path.exists(settings.LOG_DIR):
@@ -32,7 +33,6 @@ def setup_logging() -> None:
 # --- Lifecycle ---
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    vocab_manager.load_all()
     yield
 
 
