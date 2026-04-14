@@ -137,7 +137,7 @@ def start_quiz_session(
 
 @router.get("/api/quiz/{index}")
 def get_question_data(
-    index: int, session_data: SessionData = Depends(get_active_session)
+    index: int, session_data: SessionData | None = Depends(get_active_session)
 ):
     if not session_data:
         return JSONResponse({"error": "Session invalid"}, status_code=401)
@@ -160,7 +160,7 @@ def get_question_data(
 def display_question_page(
     request: Request,
     index: int,
-    session_data: SessionData = Depends(get_active_session),
+    session_data: SessionData | None = Depends(get_active_session),
 ):
     if not session_data:
         return RedirectResponse(url="/", status_code=302)
@@ -182,7 +182,7 @@ def submit_answer(
     selected_option_index: int = Form(...),
     current_index: int = Form(...),
     session_id: str = Depends(get_session_id),
-    session_data: SessionData = Depends(get_active_session),
+    session_data: SessionData | None = Depends(get_active_session),
     user_id: str | None = Depends(get_user_id),
 ):
     if not session_data or not (0 <= current_index < session_data.total_questions):
@@ -240,7 +240,7 @@ def _update_user_stats(user_id: str, topic: str, word: str, is_correct: bool) ->
 
 
 @router.get("/api/result")
-def get_result_data(session_data: SessionData = Depends(get_active_session)):
+def get_result_data(session_data: SessionData | None = Depends(get_active_session)):
     if not session_data:
         return JSONResponse({"error": "Session invalid"}, status_code=401)
 

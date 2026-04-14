@@ -14,7 +14,7 @@ from fastapi.testclient import TestClient
 from tests.conftest import FakeRedis
 from wlingo.app import create_app
 from wlingo.config import settings
-from wlingo.models import AnswerRecord, Question, SessionData
+from wlingo.models import Question, SessionData
 
 
 # ---------------------------------------------------------------------------
@@ -37,9 +37,10 @@ def _start(client, topic="English"):
     return client.post("/start", data={"topic": topic}, follow_redirects=False)
 
 
-def _session(fake_redis) -> dict:
-    """Return the first (and usually only) session stored in fake_redis."""
-    raw = next(iter(fake_redis._data.values()))
+def _session(fake_redis, client) -> dict:
+    """Return the session for the current client, looked up by cookie."""
+    session_id = client.cookies.get(settings.SESSION_COOKIE_NAME)
+    raw = fake_redis._data[session_id]
     return json.loads(raw)
 
 
@@ -103,7 +104,7 @@ def test_start_sets_session_cookie(client):
 def test_start_standard_mode_stored_in_session(client):
     c, fake_redis = client
     _start(c, "English")
-    session = _session(fake_redis)
+    session = _session(fake_redis, c)
     assert session["mode"] == "standard"
     assert session["topic"] == "English"
 
@@ -111,7 +112,7 @@ def test_start_standard_mode_stored_in_session(client):
 def test_start_generates_correct_question_count(client):
     c, fake_redis = client
     _start(c, "English")
-    session = _session(fake_redis)
+    session = _session(fake_redis, c)
     assert session["total_questions"] == len(session["prepared_questions"])
 
 
@@ -201,7 +202,7 @@ def test_submit_correct_answer_marked_correctly(client):
     _start(c)
 
     # Find the correct option index from the stored session
-    session = _session(fake_redis)
+    session = _session(fake_redis, c)
     q = session["prepared_questions"][0]
     correct_index = q["options"].index(q["translation"])
 
@@ -216,7 +217,7 @@ def test_submit_wrong_answer_marked_correctly(client):
     c, fake_redis = client
     _start(c)
 
-    session = _session(fake_redis)
+    session = _session(fake_redis, c)
     q = session["prepared_questions"][0]
     wrong_index = next(
         i for i, opt in enumerate(q["options"]) if opt != q["translation"]
@@ -262,13 +263,13 @@ def test_result_api_after_answers(client):
     c, fake_redis = client
     _start(c)
 
-    session = _session(fake_redis)
+    session = _session(fake_redis, c)
     n = session["total_questions"]
 
     # Answer all questions
     for i in range(n):
         # Re-read session after each answer (it gets updated in fake_redis)
-        session = _session(fake_redis)
+        session = _session(fake_redis, c)
         q = session["prepared_questions"][i]
         correct_index = q["options"].index(q["translation"])
         c.post(
@@ -336,7 +337,7 @@ def test_wrong_answer_creates_user_stats(client):
     c.get("/")  # ensure user_id cookie is set
     _start(c, "English")
 
-    session = _session(fake_redis)
+    session = _session(fake_redis, c)
     q = session["prepared_questions"][0]
     wrong_index = next(
         i for i, opt in enumerate(q["options"]) if opt != q["translation"]
@@ -358,7 +359,7 @@ def test_wrong_answer_increments_count(client):
     c.get("/")
     _start(c, "English")
 
-    session = _session(fake_redis)
+    session = _session(fake_redis, c)
     q = session["prepared_questions"][0]
     wrong_index = next(
         i for i, opt in enumerate(q["options"]) if opt != q["translation"]
@@ -378,7 +379,7 @@ def test_correct_answer_removes_word_from_stats(client):
     c.get("/")
     _start(c, "English")
 
-    session = _session(fake_redis)
+    session = _session(fake_redis, c)
     q = session["prepared_questions"][0]
     word = q["word"]
 
@@ -404,7 +405,7 @@ def test_correct_answer_deletes_stats_key_when_last_word(client):
     c.get("/")
     _start(c, "English")
 
-    session = _session(fake_redis)
+    session = _session(fake_redis, c)
     q = session["prepared_questions"][0]
     word = q["word"]
 
@@ -480,7 +481,7 @@ def test_start_with_invalid_topic_still_redirects(client):
 def test_start_with_invalid_topic_uses_fallback_topic(client):
     c, fake_redis = client
     c.post("/start", data={"topic": "nonexistent_topic"}, follow_redirects=False)
-    session = _session(fake_redis)
+    session = _session(fake_redis, c)
     valid_ids = {t["id"] for t in c.get("/api/topics").json()}
     assert session["topic"] in valid_ids
 
@@ -493,7 +494,7 @@ def test_start_with_invalid_topic_uses_fallback_topic(client):
 def test_quiz_page_past_last_question_redirects_to_result(client):
     c, fake_redis = client
     _start(c)
-    session = _session(fake_redis)
+    session = _session(fake_redis, c)
     n = session["total_questions"]
     resp = c.get(f"/quiz/{n}", follow_redirects=False)
     assert resp.status_code == 302

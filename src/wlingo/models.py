@@ -24,6 +24,13 @@ class Question(BaseModel):
     options: list[str]
 
 
+class AnswerRecord(BaseModel):
+    word: str
+    user_answer: str
+    correct_answer: str
+    is_correct: bool
+
+
 class SessionData(BaseModel):
     prepared_questions: list[Question]
     correct_count: int
@@ -32,10 +39,3 @@ class SessionData(BaseModel):
     created_at: datetime
     topic: str
     mode: str = "standard"
-
-
-class AnswerRecord(BaseModel):
-    word: str
-    user_answer: str
-    correct_answer: str
-    is_correct: bool

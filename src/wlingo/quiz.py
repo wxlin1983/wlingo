@@ -67,7 +67,7 @@ class RandomQuizGenerator(QuizGenerator):
             cumulative = 0.0
             for i, w in enumerate(weights):
                 cumulative += w
-                if r < cumulative:
+                if r <= cumulative:
                     selected.append(pool[i])
                     pool.pop(i)
                     weights.pop(i)
