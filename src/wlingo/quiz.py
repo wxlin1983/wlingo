@@ -146,7 +146,7 @@ class RandomQuizGenerator(QuizGenerator):
         if len(all_translations) < num_options:
             incorrect = list(all_translations)
             while len(incorrect) < num_options:
-                incorrect.append(f"Option {len(incorrect)+1}")
+                incorrect.append(f"Option {len(incorrect) + 1}")
         else:
             incorrect = random.sample(list(all_translations), num_options)
 

@@ -42,9 +42,9 @@ class TestArithmeticQuizGenerator:
         """÷ questions should never have decimal answers."""
         for q in self.gen.generate("arithmetic", 200):
             if "÷" in q.word:
-                assert (
-                    "." not in q.translation
-                ), f"Division question '{q.word}' has non-integer answer '{q.translation}'"
+                assert "." not in q.translation, (
+                    f"Division question '{q.word}' has non-integer answer '{q.translation}'"
+                )
 
     def test_generate_options_includes_correct_answer(self):
         options = self.gen._generate_options("42")
