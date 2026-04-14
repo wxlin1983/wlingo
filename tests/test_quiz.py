@@ -124,3 +124,7 @@ class TestQuizFactory:
     def test_without_vocab_manager_raises(self):
         with pytest.raises(ValueError):
             QuizFactory.create("standard")
+
+    def test_unknown_mode_falls_through_to_random_generator(self):
+        gen = QuizFactory.create("unknown_mode", MockVocabManager())
+        assert isinstance(gen, RandomQuizGenerator)

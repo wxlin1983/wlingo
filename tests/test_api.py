@@ -5,12 +5,16 @@ The TestClient is function-scoped, giving each test a clean slate.
 """
 
 import json
+import uuid
 import pytest
+from datetime import datetime, timedelta
 from unittest.mock import patch
 from fastapi.testclient import TestClient
 
 from tests.conftest import FakeRedis
 from wlingo.app import create_app
+from wlingo.config import settings
+from wlingo.models import AnswerRecord, Question, SessionData
 
 
 # ---------------------------------------------------------------------------
@@ -379,3 +383,132 @@ def test_correct_answer_removes_word_from_stats(client):
     raw = fake_redis._data.get(stats_key)
     stats = json.loads(raw) if raw else {}
     assert word not in stats
+
+
+def test_correct_answer_deletes_stats_key_when_last_word(client):
+    """When the only tracked word is answered correctly, the stats key is removed."""
+    c, fake_redis = client
+    c.get("/")
+    _start(c, "English")
+
+    session = _session(fake_redis)
+    q = session["prepared_questions"][0]
+    word = q["word"]
+
+    user_id = c.cookies.get("wlingo_user_id")
+    stats_key = f"user_stats:{user_id}:English"
+    fake_redis.set(stats_key, json.dumps({word: 1}))
+
+    correct_index = q["options"].index(q["translation"])
+    c.post(
+        "/submit_answer",
+        data={"selected_option_index": correct_index, "current_index": 0},
+    )
+
+    assert stats_key not in fake_redis._data
+
+
+# ---------------------------------------------------------------------------
+# Session expiry
+# ---------------------------------------------------------------------------
+
+
+def _inject_session(fake_redis, client, created_at: datetime, topic: str = "English"):
+    """Insert a synthetic SessionData into fake_redis and set the cookie."""
+    q = Question(word="test", translation="测试", options=["测试", "a", "b", "c"])
+    session = SessionData(
+        prepared_questions=[q],
+        correct_count=0,
+        total_questions=1,
+        answers=[],
+        created_at=created_at,
+        topic=topic,
+        mode="standard",
+    )
+    session_id = str(uuid.uuid4())
+    fake_redis.set(session_id, session.model_dump_json())
+    client.cookies.set(settings.SESSION_COOKIE_NAME, session_id)
+    return session_id
+
+
+def test_expired_session_returns_401(client):
+    c, fake_redis = client
+    expired_at = datetime.now() - timedelta(
+        minutes=settings.SESSION_TIMEOUT_MINUTES + 1
+    )
+    _inject_session(fake_redis, c, created_at=expired_at)
+
+    assert c.get("/api/quiz/0").status_code == 401
+
+
+def test_expired_session_is_deleted_from_redis(client):
+    c, fake_redis = client
+    expired_at = datetime.now() - timedelta(
+        minutes=settings.SESSION_TIMEOUT_MINUTES + 1
+    )
+    session_id = _inject_session(fake_redis, c, created_at=expired_at)
+
+    c.get("/api/quiz/0")
+
+    assert session_id not in fake_redis._data
+
+
+# ---------------------------------------------------------------------------
+# Invalid topic fallback on /start
+# ---------------------------------------------------------------------------
+
+
+def test_start_with_invalid_topic_still_redirects(client):
+    c, _ = client
+    resp = c.post("/start", data={"topic": "nonexistent_topic"}, follow_redirects=False)
+    assert resp.status_code == 302
+
+
+def test_start_with_invalid_topic_uses_fallback_topic(client):
+    c, fake_redis = client
+    c.post("/start", data={"topic": "nonexistent_topic"}, follow_redirects=False)
+    session = _session(fake_redis)
+    valid_ids = {t["id"] for t in c.get("/api/topics").json()}
+    assert session["topic"] in valid_ids
+
+
+# ---------------------------------------------------------------------------
+# /quiz/{index} redirect when index >= total_questions
+# ---------------------------------------------------------------------------
+
+
+def test_quiz_page_past_last_question_redirects_to_result(client):
+    c, fake_redis = client
+    _start(c)
+    session = _session(fake_redis)
+    n = session["total_questions"]
+    resp = c.get(f"/quiz/{n}", follow_redirects=False)
+    assert resp.status_code == 302
+    assert resp.headers["location"] == "/result"
+
+
+# ---------------------------------------------------------------------------
+# /api/result with zero questions
+# ---------------------------------------------------------------------------
+
+
+def test_result_api_with_zero_questions_returns_zero_score(client):
+    c, fake_redis = client
+    session = SessionData(
+        prepared_questions=[],
+        correct_count=0,
+        total_questions=0,
+        answers=[],
+        created_at=datetime.now(),
+        topic="English",
+        mode="standard",
+    )
+    session_id = str(uuid.uuid4())
+    fake_redis.set(session_id, session.model_dump_json())
+    c.cookies.set(settings.SESSION_COOKIE_NAME, session_id)
+
+    resp = c.get("/api/result")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["score_percentage"] == 0
+    assert data["total_questions"] == 0
