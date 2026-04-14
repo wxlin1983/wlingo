@@ -8,15 +8,9 @@ anyio==4.12.0
     # via
     #   starlette
     #   watchfiles
-black==25.11.0
-    # via wlingo (pyproject.toml)
 click==8.3.1
-    # via
-    #   black
-    #   uvicorn
+    # via uvicorn
 fastapi==0.124.0
-    # via wlingo (pyproject.toml)
-flake8==7.3.0
     # via wlingo (pyproject.toml)
 h11==0.16.0
     # via uvicorn
@@ -28,53 +22,35 @@ jinja2==3.1.6
     # via wlingo (pyproject.toml)
 markupsafe==3.0.3
     # via jinja2
-mccabe==0.7.0
-    # via flake8
-mypy-extensions==1.1.0
-    # via black
 numpy==2.2.4
     # via pandas
-packaging==25.0
-    # via black
 pandas==2.3.3
     # via wlingo (pyproject.toml)
-pathspec==0.12.1
-    # via black
-platformdirs==4.5.1
-    # via black
-pycodestyle==2.14.0
-    # via flake8
 pydantic==2.12.5
     # via fastapi
-redis==5.0.7
-    # via wlingo (pyproject.toml)
 pydantic-core==2.41.5
     # via pydantic
-pyflakes==3.4.0
-    # via flake8
 python-dateutil==2.9.0.post0
     # via pandas
 python-dotenv==1.2.1
     # via uvicorn
 python-multipart==0.0.20
     # via wlingo (pyproject.toml)
-pytokens==0.3.0
-    # via black
 pytz==2025.2
     # via pandas
 pyyaml==6.0.3
     # via uvicorn
+redis==5.0.7
+    # via wlingo (pyproject.toml)
 six==1.17.0
     # via python-dateutil
 starlette==0.50.0
     # via fastapi
 typing-extensions==4.15.0
     # via
-    #   anyio
     #   fastapi
     #   pydantic
     #   pydantic-core
-    #   starlette
     #   typing-inspection
 typing-inspection==0.4.2
     # via pydantic

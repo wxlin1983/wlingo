@@ -18,67 +18,6 @@ class QuizGenerator(ABC):
         pass
 
 
-class ArithmeticQuizGenerator(QuizGenerator):
-    """Generates arithmetic quizzes for elementary school kids."""
-
-    def generate(
-        self,
-        topic: str,
-        count: int,
-        word_weights: dict[str, int] | None = None,
-    ) -> list[Question]:
-        questions = []
-        for _ in range(count):
-            op = random.choice(["+", "-", "*", "/"])
-
-            if op == "+":
-                a = random.randint(0, 99)
-                b = random.randint(0, 99 - a)
-                answer = a + b
-                question_text = f"{a} + {b}"
-            elif op == "-":
-                a = random.randint(0, 99)
-                b = random.randint(0, 99)
-                answer = a - b
-                question_text = f"{a} - {b}"
-            elif op == "*":
-                a = random.randint(2, 15)
-                b = random.randint(2, 99 // a)
-                if random.choice([True, False]):
-                    a, b = b, a
-                answer = a * b
-                question_text = f"{a} × {b}"
-            else:  # op == "/"
-                divisor = random.randint(2, 12)
-                answer = random.randint(2, 12)
-                dividend = (
-                    divisor * answer
-                )  # pick quotient first to guarantee whole-number result
-                question_text = f"{dividend} ÷ {divisor}"
-
-            options = self._generate_options(str(answer))
-            questions.append(
-                Question(word=question_text, translation=str(answer), options=options)
-            )
-        return questions
-
-    def _generate_options(self, correct_answer: str) -> list[str]:
-        """Helper to generate random distractors for arithmetic questions."""
-        correct_answer_int = int(correct_answer)
-        options = {correct_answer_int}
-        while len(options) < 4:
-            # Generate distractors close to the correct answer
-            offset = random.randint(-5, 5)
-            if offset == 0:
-                continue
-            distractor = correct_answer_int + offset
-            options.add(distractor)
-
-        str_options = [str(opt) for opt in options]
-        random.shuffle(str_options)
-        return str_options
-
-
 class RandomQuizGenerator(QuizGenerator):
     """Standard mode: Randomly selects N words from the topic."""
 
@@ -162,14 +101,6 @@ class QuizFactory:
     def create(
         mode: str, vocab_manager: VocabularyManager | None = None
     ) -> QuizGenerator:
-        if mode == "arithmetic":
-            return ArithmeticQuizGenerator()
-        elif mode == "standard":
-            if not vocab_manager:
-                raise ValueError("VocabularyManager is required for standard mode")
-            return RandomQuizGenerator(vocab_manager)
-        else:
-            # Fallback for any other mode will be standard
-            if not vocab_manager:
-                raise ValueError("VocabularyManager is required for standard mode")
-            return RandomQuizGenerator(vocab_manager)
+        if not vocab_manager:
+            raise ValueError("VocabularyManager is required for standard mode")
+        return RandomQuizGenerator(vocab_manager)

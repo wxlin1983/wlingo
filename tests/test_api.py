@@ -104,15 +104,6 @@ def test_start_standard_mode_stored_in_session(client):
     assert session["topic"] == "English"
 
 
-def test_start_arithmetic_mode(client):
-    c, fake_redis = client
-    resp = _start(c, "__arithmetic__")
-    assert resp.status_code == 302
-    session = _session(fake_redis)
-    assert session["mode"] == "arithmetic"
-    assert session["topic"] == "Arithmetic"
-
-
 def test_start_generates_correct_question_count(client):
     c, fake_redis = client
     _start(c, "English")
@@ -388,15 +379,3 @@ def test_correct_answer_removes_word_from_stats(client):
     raw = fake_redis._data.get(stats_key)
     stats = json.loads(raw) if raw else {}
     assert word not in stats
-
-
-def test_arithmetic_mode_does_not_create_stats(client):
-    c, fake_redis = client
-    c.get("/")
-    _start(c, "__arithmetic__")
-
-    c.post("/submit_answer", data={"selected_option_index": 0, "current_index": 0})
-
-    user_id = c.cookies.get("wlingo_user_id")
-    stats_keys = [k for k in fake_redis._data if k.startswith(f"user_stats:{user_id}")]
-    assert len(stats_keys) == 0

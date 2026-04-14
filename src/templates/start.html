@@ -48,14 +48,6 @@
             // Clear loading text
             $select.empty();
 
-            // Add Arithmetic option first
-            $select.append(
-                $('<option>', {
-                    value: '__arithmetic__',
-                    text: 'Arithmetic Quiz'
-                })
-            );
-
             $.get(ROOT_PATH + '/api/topics')
                 .done(function (topics) {
                     if (topics.length > 0) {

@@ -1,11 +1,10 @@
 # wlingo
 
-A web-based quiz application for learning vocabulary and practicing arithmetic. Built with FastAPI and Redis.
+A web-based quiz application for learning vocabulary. Built with FastAPI and Redis.
 
 ## Features
 
 - **Vocabulary quizzes** — multiple-choice questions drawn from CSV word lists
-- **Arithmetic mode** — randomized addition, subtraction, multiplication, and division problems
 - **Keyboard shortcuts** — `1`–`4` to select an answer, `Enter` to advance, `S` to hear the word spoken aloud
 - **Text-to-speech** — pronunciation support for English and Korean
 - **Add your own topics** — drop a CSV file in `src/vocabulary/` and it's available on next start

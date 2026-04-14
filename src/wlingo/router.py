@@ -91,23 +91,16 @@ def start_quiz_session(
     user_id: str | None = Depends(get_user_id),
 ):
     mode = "standard"
-    if topic == "__arithmetic__":  # sentinel value; no CSV-backed vocab needed
-        mode = "arithmetic"
-        topic = "Arithmetic"
-
     word_weights: dict[str, int] = {}
-    if mode == "standard":
-        # Validate topic exists
-        if not vocab_manager.get_words(topic):
-            topics = vocab_manager.get_topics()
-            topic = topics[0]["id"] if topics else "default_dummy"
-        generator = QuizFactory.create(mode, vocab_manager)
-        if user_id:
-            raw = redis_client.get(_user_stats_key(user_id, topic))
-            if raw:
-                word_weights = json.loads(raw)
-    else:  # mode is arithmetic
-        generator = QuizFactory.create(mode)
+    # Validate topic exists
+    if not vocab_manager.get_words(topic):
+        topics = vocab_manager.get_topics()
+        topic = topics[0]["id"] if topics else "default_dummy"
+    generator = QuizFactory.create(mode, vocab_manager)
+    if user_id:
+        raw = redis_client.get(_user_stats_key(user_id, topic))
+        if raw:
+            word_weights = json.loads(raw)
 
     prepared_questions = generator.generate(
         topic, settings.TEST_SIZE, word_weights=word_weights
