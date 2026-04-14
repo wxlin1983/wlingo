@@ -1,4 +1,3 @@
-import pytest
 from wlingo.vocabulary import VocabularyManager
 
 
