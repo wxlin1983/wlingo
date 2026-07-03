@@ -19,6 +19,11 @@
             Choose a topic and start learning!
         </p>
 
+        <div id="resume-section" class="resume-section" style="display:none">
+            <p id="resume-info" class="resume-info"></p>
+            <a id="resume-btn" class="resume-btn">Resume Quiz →</a>
+        </div>
+
         <form action="{{ request.scope.get('root_path', '') }}/start" method="POST" id="start-form">
 
             <div class="start-div">
@@ -33,8 +38,22 @@
                 <div id="error-message" class="start-error"></div>
             </div>
 
+            <div class="start-div">
+                <label class="start-label">Quiz Mode:</label>
+                <div class="mode-selector">
+                    <label class="mode-option">
+                        <input type="radio" name="mode" value="adaptive" checked>
+                        Adaptive <span class="mode-desc">(focuses on your weak spots)</span>
+                    </label>
+                    <label class="mode-option">
+                        <input type="radio" name="mode" value="random">
+                        Random <span class="mode-desc">(pure shuffle)</span>
+                    </label>
+                </div>
+            </div>
+
             <button type="submit" id="start-btn" class="start-new-quiz-btn start-btn-lg" disabled>
-                Start Quiz ▶️
+                Start Quiz ▶
             </button>
         </form>
     </div>
@@ -60,18 +79,30 @@
                                 })
                             );
                         });
+                        $select.prop('disabled', false);
+                        $startButton.prop('disabled', false);
                     } else {
                         $errorMessage.text('No vocabulary files found.').show();
                     }
                 })
                 .fail(function () {
                     $errorMessage.text('Failed to connect to server to load vocabulary.').show();
-                })
-                .done(function (topics) {
-                    if (topics.length > 0) {
-                        $select.prop('disabled', false);
-                        $startButton.prop('disabled', false);
+                });
+
+            $.get(ROOT_PATH + '/api/session')
+                .done(function (data) {
+                    if (!data.active) return;
+                    const $section = $('#resume-section');
+                    const $btn = $('#resume-btn');
+                    if (data.completed) {
+                        $('#resume-info').text(`${data.topic} quiz completed — view your results`);
+                        $btn.attr('href', ROOT_PATH + '/result').text('See Results →');
+                    } else {
+                        const progress = `Question ${data.current_index + 1} of ${data.total_questions}`;
+                        $('#resume-info').text(`${data.topic} in progress — ${progress}`);
+                        $btn.attr('href', ROOT_PATH + `/quiz/${data.current_index}`);
                     }
+                    $section.show();
                 });
         });
     </script>

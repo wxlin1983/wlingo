@@ -1,20 +1,20 @@
 """Integration tests for the FastAPI router.
 
-Redis is replaced with an in-memory FakeRedis so tests need no running services.
+Redis is replaced with fakeredis so tests need no running services.
 The TestClient is function-scoped, giving each test a clean slate.
 """
 
 import json
 import uuid
 import pytest
+import fakeredis
 from datetime import datetime, timedelta
-from unittest.mock import patch
 from fastapi.testclient import TestClient
 
-from tests.conftest import FakeRedis
 from wlingo.app import create_app
 from wlingo.config import settings
 from wlingo.models import Question, SessionData
+from wlingo.routers.deps import get_redis
 
 
 # ---------------------------------------------------------------------------
@@ -24,23 +24,23 @@ from wlingo.models import Question, SessionData
 
 @pytest.fixture
 def client():
-    """Fresh app + TestClient + FakeRedis per test."""
-    fake_redis = FakeRedis()
-    with patch("wlingo.router.redis_client", fake_redis):
-        app = create_app()
-        with TestClient(app) as c:
-            yield c, fake_redis
+    """Fresh app + TestClient + fakeredis per test."""
+    fake_redis = fakeredis.FakeRedis(decode_responses=True)
+    app = create_app()
+    app.dependency_overrides[get_redis] = lambda: fake_redis
+    with TestClient(app) as c:
+        yield c, fake_redis
 
 
-def _start(client, topic="English"):
+def _start(client, topic="English", mode="adaptive"):
     """Helper: start a quiz session and return the response."""
-    return client.post("/start", data={"topic": topic}, follow_redirects=False)
+    return client.post("/start", data={"topic": topic, "mode": mode}, follow_redirects=False)
 
 
 def _session(fake_redis, client) -> dict:
     """Return the session for the current client, looked up by cookie."""
     session_id = client.cookies.get(settings.SESSION_COOKIE_NAME)
-    raw = fake_redis._data[session_id]
+    raw = fake_redis.get(session_id)
     return json.loads(raw)
 
 
@@ -92,7 +92,7 @@ def test_start_standard_quiz_redirects(client):
 def test_start_creates_session_in_redis(client):
     c, fake_redis = client
     _start(c, "English")
-    assert len(fake_redis._data) == 1
+    assert len(list(fake_redis.keys())) == 1
 
 
 def test_start_sets_session_cookie(client):
@@ -101,12 +101,26 @@ def test_start_sets_session_cookie(client):
     assert "quiz_session_id" in resp.cookies or "Set-Cookie" in resp.headers
 
 
-def test_start_standard_mode_stored_in_session(client):
+def test_start_adaptive_mode_stored_in_session(client):
     c, fake_redis = client
-    _start(c, "English")
+    _start(c, "English", mode="adaptive")
     session = _session(fake_redis, c)
-    assert session["mode"] == "standard"
+    assert session["mode"] == "adaptive"
     assert session["topic"] == "English"
+
+
+def test_start_random_mode_stored_in_session(client):
+    c, fake_redis = client
+    _start(c, "English", mode="random")
+    session = _session(fake_redis, c)
+    assert session["mode"] == "random"
+
+
+def test_start_invalid_mode_defaults_to_adaptive(client):
+    c, fake_redis = client
+    c.post("/start", data={"topic": "English", "mode": "bogus"}, follow_redirects=False)
+    session = _session(fake_redis, c)
+    assert session["mode"] == "adaptive"
 
 
 def test_start_generates_correct_question_count(client):
@@ -299,11 +313,11 @@ def test_result_page_returns_200(client):
 def test_reset_clears_session_from_redis(client):
     c, fake_redis = client
     _start(c)
-    assert len(fake_redis._data) == 1
+    assert len(list(fake_redis.keys())) == 1
 
     resp = c.post("/api/reset")
     assert resp.status_code == 200
-    assert len(fake_redis._data) == 0
+    assert len(list(fake_redis.keys())) == 0
 
 
 def test_reset_without_session_succeeds(client):
@@ -349,9 +363,30 @@ def test_wrong_answer_creates_user_stats(client):
 
     user_id = c.cookies.get("wlingo_user_id")
     stats_key = f"user_stats:{user_id}:English"
-    assert stats_key in fake_redis._data
-    stats = json.loads(fake_redis._data[stats_key])
+    assert fake_redis.exists(stats_key)
+    stats = json.loads(fake_redis.get(stats_key))
     assert stats[q["word"]] == 1
+
+
+def test_random_mode_does_not_create_user_stats(client):
+    """Random mode skips user-stats tracking."""
+    c, fake_redis = client
+    c.get("/")
+    _start(c, "English", mode="random")
+
+    session = _session(fake_redis, c)
+    q = session["prepared_questions"][0]
+    wrong_index = next(
+        i for i, opt in enumerate(q["options"]) if opt != q["translation"]
+    )
+    c.post(
+        "/submit_answer",
+        data={"selected_option_index": wrong_index, "current_index": 0},
+    )
+
+    user_id = c.cookies.get("wlingo_user_id")
+    stats_key = f"user_stats:{user_id}:English"
+    assert not fake_redis.exists(stats_key)
 
 
 def test_wrong_answer_increments_count(client):
@@ -373,7 +408,7 @@ def test_wrong_answer_increments_count(client):
     )
 
     stats_key = f"user_stats:{user_id}:English"
-    assert json.loads(fake_redis._data[stats_key])[word] == 1
+    assert json.loads(fake_redis.get(stats_key))[word] == 1
 
     # Seed a second session where the same word appears first
     second_q = Question(word=word, translation=q["translation"], options=q["options"])
@@ -384,7 +419,7 @@ def test_wrong_answer_increments_count(client):
         answers=[],
         created_at=datetime.now(),
         topic="English",
-        mode="standard",
+        mode="adaptive",
     )
     session2_id = str(uuid.uuid4())
     fake_redis.set(session2_id, session2.model_dump_json())
@@ -395,7 +430,7 @@ def test_wrong_answer_increments_count(client):
         "/submit_answer",
         data={"selected_option_index": wrong_index, "current_index": 0},
     )
-    assert json.loads(fake_redis._data[stats_key])[word] == 2
+    assert json.loads(fake_redis.get(stats_key))[word] == 2
 
 
 def test_correct_answer_removes_word_from_stats(client):
@@ -418,7 +453,7 @@ def test_correct_answer_removes_word_from_stats(client):
         data={"selected_option_index": correct_index, "current_index": 0},
     )
 
-    raw = fake_redis._data.get(stats_key)
+    raw = fake_redis.get(stats_key)
     stats = json.loads(raw) if raw else {}
     assert word not in stats
 
@@ -443,7 +478,7 @@ def test_correct_answer_deletes_stats_key_when_last_word(client):
         data={"selected_option_index": correct_index, "current_index": 0},
     )
 
-    assert stats_key not in fake_redis._data
+    assert not fake_redis.exists(stats_key)
 
 
 # ---------------------------------------------------------------------------
@@ -461,7 +496,7 @@ def _inject_session(fake_redis, client, created_at: datetime, topic: str = "Engl
         answers=[],
         created_at=created_at,
         topic=topic,
-        mode="standard",
+        mode="adaptive",
     )
     session_id = str(uuid.uuid4())
     fake_redis.set(session_id, session.model_dump_json())
@@ -488,26 +523,83 @@ def test_expired_session_is_deleted_from_redis(client):
 
     c.get("/api/quiz/0")
 
-    assert session_id not in fake_redis._data
+    assert not fake_redis.exists(session_id)
 
 
 # ---------------------------------------------------------------------------
-# Invalid topic fallback on /start
+# Input sanitization on /start
 # ---------------------------------------------------------------------------
 
 
-def test_start_with_invalid_topic_still_redirects(client):
+def test_start_with_invalid_topic_returns_400(client):
     c, _ = client
     resp = c.post("/start", data={"topic": "nonexistent_topic"}, follow_redirects=False)
+    assert resp.status_code == 400
+
+
+def test_start_strips_whitespace_from_topic(client):
+    c, _ = client
+    resp = c.post("/start", data={"topic": "  English  "}, follow_redirects=False)
     assert resp.status_code == 302
 
 
-def test_start_with_invalid_topic_uses_fallback_topic(client):
+# ---------------------------------------------------------------------------
+# Session API (resume)
+# ---------------------------------------------------------------------------
+
+
+def test_session_api_no_active_session(client):
+    c, _ = client
+    resp = c.get("/api/session")
+    assert resp.status_code == 200
+    assert resp.json()["active"] is False
+
+
+def test_session_api_with_active_session(client):
     c, fake_redis = client
-    c.post("/start", data={"topic": "nonexistent_topic"}, follow_redirects=False)
+    _start(c, "English")
+    resp = c.get("/api/session")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["active"] is True
+    assert data["completed"] is False
+    assert data["topic"] == "English"
+    assert data["current_index"] == 0
+    assert data["total_questions"] > 0
+
+
+def test_session_api_advances_index_after_answer(client):
+    c, fake_redis = client
+    _start(c, "English")
+    c.post("/submit_answer", data={"selected_option_index": 0, "current_index": 0})
+    data = c.get("/api/session").json()
+    assert data["current_index"] == 1
+
+
+def test_session_api_completed_when_all_answered(client):
+    c, fake_redis = client
+    _start(c, "English")
     session = _session(fake_redis, c)
-    valid_ids = {t["id"] for t in c.get("/api/topics").json()}
-    assert session["topic"] in valid_ids
+    n = session["total_questions"]
+    for i in range(n):
+        c.post("/submit_answer", data={"selected_option_index": 0, "current_index": i})
+    data = c.get("/api/session").json()
+    assert data["completed"] is True
+
+
+# ---------------------------------------------------------------------------
+# Vocab reload
+# ---------------------------------------------------------------------------
+
+
+def test_reload_vocab_returns_topics(client):
+    c, _ = client
+    resp = c.post("/api/admin/reload-vocab")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "loaded" in data
+    assert "topics" in data
+    assert data["loaded"] > 0
 
 
 # ---------------------------------------------------------------------------
@@ -539,7 +631,7 @@ def test_result_api_with_zero_questions_returns_zero_score(client):
         answers=[],
         created_at=datetime.now(),
         topic="English",
-        mode="standard",
+        mode="adaptive",
     )
     session_id = str(uuid.uuid4())
     fake_redis.set(session_id, session.model_dump_json())

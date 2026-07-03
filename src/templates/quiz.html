@@ -24,9 +24,7 @@
 
         <div id="quiz-content">
             <h2 id="question-display">Loading...</h2>
-            {% if mode == 'standard' %}
             <button id="speak-btn">🔊 Listen</button>
-            {% endif %}
 
             <div id="options-container">
             </div>
@@ -43,16 +41,14 @@
         </div>
 
         <p class="tip">
-            <small>Tip: Use keys <strong>1-4</strong> to select, <strong>Enter</strong> for next{% if mode == 'standard'
-                %},
-                <strong>S</strong> to speak{% endif %}, <strong>Esc</strong> to cancel.</small>
+            <small>Tip: Use keys <strong>1-4</strong> to select, <strong>Enter</strong> for next,
+                <strong>S</strong> to speak, <strong>Esc</strong> to cancel.</small>
         </p>
     </div>
 
     <script>
         $(document).ready(function () {
             const currentIndex = {{ current_index }};
-            const mode = "{{ mode }}";
             const topic = "{{ topic }}";
 
             let isAnswered = false;
@@ -78,7 +74,7 @@
                 $.get(ROOT_PATH + `/api/quiz/${currentIndex}`)
                     .done(function (data) {
                         $('#question-display').text(data.word);
-                        currentQuestionText = data.word; // Update current question text
+                        currentQuestionText = data.word;
 
                         $('#current-q').text(data.current_index + 1);
                         $('#total-q').text(data.total_questions);
@@ -168,12 +164,9 @@
             }
 
             // --- Event Listeners ---
-            if (mode === 'standard') {
-                $('#speak-btn').on('click', function () {
-                    speakWord();
-                });
-            }
-
+            $('#speak-btn').on('click', function () {
+                speakWord();
+            });
 
             $(document).on('keydown', function (e) {
                 const key = e.key;
@@ -194,7 +187,7 @@
                     }
                 }
 
-                if (key.toLowerCase() === 's' && mode === 'standard') {
+                if (key.toLowerCase() === 's') {
                     speakWord();
                 }
             });

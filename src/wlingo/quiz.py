@@ -102,12 +102,15 @@ class RandomQuizGenerator(QuizGenerator):
 class QuizFactory:
     """Factory to select the appropriate generator."""
 
+    # "standard" is a legacy alias for "adaptive"
+    VALID_MODES = {"adaptive", "random", "standard"}
+
     @staticmethod
     def create(
         mode: str, vocab_manager: VocabularyManager | None = None
     ) -> QuizGenerator:
         if not vocab_manager:
-            raise ValueError("VocabularyManager is required for standard mode")
-        if mode != "standard":
+            raise ValueError("VocabularyManager is required")
+        if mode not in QuizFactory.VALID_MODES:
             raise ValueError(f"Unknown quiz mode: {mode!r}")
         return RandomQuizGenerator(vocab_manager)

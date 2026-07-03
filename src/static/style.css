@@ -302,3 +302,55 @@ hr {
 .start-div {
   margin-bottom: 20px;
 }
+
+.resume-section {
+  background-color: #e8f4fd;
+  border: 1px solid #1cb0f6;
+  border-radius: 8px;
+  padding: 15px 20px;
+  margin-bottom: 25px;
+  text-align: center;
+}
+
+.resume-info {
+  color: #555;
+  margin: 0 0 10px;
+  font-size: 0.95em;
+}
+
+.resume-btn {
+  display: inline-block;
+  background-color: #1cb0f6;
+  color: white;
+  padding: 8px 22px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: bold;
+  font-size: 0.95em;
+  transition: background-color 0.2s;
+}
+
+.resume-btn:hover {
+  background-color: #0b9de0;
+}
+
+.mode-selector {
+  display: flex;
+  gap: 24px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.mode-option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 0.95em;
+  color: #444;
+}
+
+.mode-desc {
+  color: #888;
+  font-size: 0.85em;
+}
