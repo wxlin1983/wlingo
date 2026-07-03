@@ -26,13 +26,32 @@ cd src && uvicorn wlingo.main:app --host 0.0.0.0 --port 8002 --reload
 
 # Run with Docker (recommended — starts Redis automatically)
 docker compose up --build
+
+# Frontend dev server (proxies /api, /start, /submit_answer to :8002)
+cd frontend && npm install && npm run dev   # → http://localhost:5173
+
+# Build frontend for production (outputs to frontend/dist/)
+cd frontend && npm run build
+# Copy built files to where FastAPI serves them:
+cp -r frontend/dist/* src/static/
 ```
 
-App is available at **http://localhost:8002**. Interactive API docs at **/docs**.
+App is available at **http://localhost:8002**. Vite dev server at **http://localhost:5173**. Interactive API docs at **/docs**.
+
+### Frontend
+
+The React SPA lives in `frontend/`. Stack: React 18 + TypeScript, Vite, Tailwind CSS v3, Framer Motion, React Router v6.
+
+**Root-path handling** — Docker Compose runs the app under `/wlingo`. At build time, set `VITE_ROOT_PATH=/wlingo` (the Dockerfile does this automatically). Locally, leave it empty (the `.env.development` default). This controls Vite's `base` for asset URLs, React Router's `basename`, and all API call prefixes in `api.ts`.
+
+Pages:
+- `StartPage` — topic selector, adaptive/random mode toggle, resume-session banner
+- `QuizPage` — progress bar, word card, animated option buttons, keyboard shortcuts (1–4 / Enter / S / Esc)
+- `ResultPage` — SVG score ring with CSS animation, scrollable answer review
 
 ## Architecture
 
-**wlingo** is a FastAPI + Redis vocabulary quiz app. The server renders thin HTML shells; all quiz data flows through JSON API endpoints (`/api/*`) that the frontend calls via JavaScript.
+**wlingo** is a FastAPI + Redis vocabulary quiz app. The backend exposes JSON API endpoints (`/api/*`); the frontend is a React 18 + TypeScript SPA built with Vite and served as static files.
 
 ### Key structural details
 
@@ -40,7 +59,7 @@ App is available at **http://localhost:8002**. Interactive API docs at **/docs**
 
 **App factory** — `app.py:create_app()` constructs the FastAPI instance. Tests import this directly and override the Redis dependency before using it, keeping test setup clean.
 
-**Module-level singletons** — `globals.py` initializes `templates` (Jinja2) and `vocab_manager` (VocabularyManager) at import time. Because these use relative paths, they only resolve correctly after the cwd is set to `src/`.
+**Module-level singletons** — `globals.py` initializes `vocab_manager` (VocabularyManager) at import time. Because it uses a relative path, it only resolves correctly after the cwd is set to `src/`.
 
 ### Router layout
 
@@ -49,7 +68,7 @@ Routes are split into two sub-routers mounted in `app.py`:
 | Module | Routes |
 |---|---|
 | `routers/api.py` | All JSON/form endpoints: `/api/*`, `/start`, `/submit_answer` |
-| `routers/pages.py` | HTML shell pages: `/`, `/quiz/{index}`, `/result` |
+| `routers/pages.py` | SPA catch-all: serves `static/index.html` for every non-API path |
 
 Shared FastAPI dependencies (session lookup, cookie extraction, Redis getter) live in `routers/deps.py`. The `get_redis` function is the injection point for tests — override it via `app.dependency_overrides[get_redis]`.
 

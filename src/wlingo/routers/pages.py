@@ -1,56 +1,34 @@
-import logging
+import os
 import uuid
 
-from fastapi import APIRouter, Depends, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi import APIRouter, Cookie
+from fastapi.responses import FileResponse, HTMLResponse
 
 from ..config import settings
-from ..globals import templates
-from ..models import SessionData
-from .deps import get_active_session, get_user_id
 
 router = APIRouter()
-logger = logging.getLogger("wlingo")
+
+_USER_COOKIE = "wlingo_user_id"
+_USER_COOKIE_MAX_AGE = 60 * 60 * 24 * 365 * 5  # 5 years
 
 
-@router.get("/", response_class=HTMLResponse)
-async def home(
-    request: Request,
-    user_id: str | None = Depends(get_user_id),
+@router.get("/{full_path:path}", include_in_schema=False)
+async def serve_spa(
+    full_path: str,
+    wlingo_user_id: str | None = Cookie(default=None),
 ):
-    resp = templates.TemplateResponse(request, "start.html")
-    if not user_id:
+    index_path = os.path.join(settings.STATIC_DIR, "index.html")
+    resp: FileResponse | HTMLResponse
+    if os.path.exists(index_path):
+        resp = FileResponse(index_path)
+    else:
+        resp = HTMLResponse("<div id='root'></div>")
+
+    if not wlingo_user_id:
         resp.set_cookie(
-            key=settings.USER_COOKIE_NAME,
+            key=_USER_COOKIE,
             value=str(uuid.uuid4()),
+            max_age=_USER_COOKIE_MAX_AGE,
             httponly=True,
-            samesite="Lax",
-            max_age=settings.USER_STATS_TTL_DAYS * 86400,
         )
     return resp
-
-
-@router.get("/quiz/{index}", response_class=HTMLResponse)
-def display_question_page(
-    request: Request,
-    index: int,
-    session_data: SessionData | None = Depends(get_active_session),
-):
-    if not session_data:
-        return RedirectResponse(url="/", status_code=302)
-    if index < 0 or index >= session_data.total_questions:
-        return RedirectResponse(url="/result", status_code=302)
-    return templates.TemplateResponse(
-        request,
-        "quiz.html",
-        {
-            "current_index": index,
-            "mode": session_data.mode,
-            "topic": session_data.topic,
-        },
-    )
-
-
-@router.get("/result", response_class=HTMLResponse)
-async def result_page(request: Request):
-    return templates.TemplateResponse(request, "result.html")

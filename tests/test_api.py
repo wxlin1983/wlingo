@@ -135,13 +135,6 @@ def test_start_generates_correct_question_count(client):
 # ---------------------------------------------------------------------------
 
 
-def test_quiz_page_without_session_redirects_home(client):
-    c, _ = client
-    resp = c.get("/quiz/0", follow_redirects=False)
-    assert resp.status_code == 302
-    assert resp.headers["location"] == "/"
-
-
 def test_get_question_api_without_session_returns_401(client):
     c, _ = client
     assert c.get("/api/quiz/0").status_code == 401
@@ -177,12 +170,13 @@ def test_quiz_page_with_valid_session_returns_200(client):
     assert c.get("/quiz/0").status_code == 200
 
 
-def test_quiz_page_negative_index_redirects_to_result(client):
+def test_catch_all_serves_spa(client):
+    """Non-API paths serve the SPA shell (index.html or minimal fallback)."""
     c, _ = client
-    _start(c)
-    resp = c.get("/quiz/-1", follow_redirects=False)
-    assert resp.status_code == 302
-    assert resp.headers["location"] == "/result"
+    for path in ["/quiz/0", "/quiz/-1", "/result", "/some/unknown/path"]:
+        resp = c.get(path)
+        assert resp.status_code == 200
+        assert "text/html" in resp.headers["content-type"]
 
 
 # ---------------------------------------------------------------------------
@@ -600,21 +594,6 @@ def test_reload_vocab_returns_topics(client):
     assert "loaded" in data
     assert "topics" in data
     assert data["loaded"] > 0
-
-
-# ---------------------------------------------------------------------------
-# /quiz/{index} redirect when index >= total_questions
-# ---------------------------------------------------------------------------
-
-
-def test_quiz_page_past_last_question_redirects_to_result(client):
-    c, fake_redis = client
-    _start(c)
-    session = _session(fake_redis, c)
-    n = session["total_questions"]
-    resp = c.get(f"/quiz/{n}", follow_redirects=False)
-    assert resp.status_code == 302
-    assert resp.headers["location"] == "/result"
 
 
 # ---------------------------------------------------------------------------
