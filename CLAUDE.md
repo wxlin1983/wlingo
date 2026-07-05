@@ -49,6 +49,8 @@ Pages:
 - `QuizPage` — progress bar, word card, animated option buttons, keyboard shortcuts (1–4 / Enter / S / Esc)
 - `ResultPage` — SVG score ring with CSS animation, scrollable answer review
 
+**Branding** — the app icon (`frontend/public/favicon.svg`) is a "W" monogram: two bold chevrons in the quiz UI's sky palette, with a small accent triangle at the center peak. Referenced from `index.html` as a root-relative `/favicon.svg`, which Vite rewrites to the configured `base` at build time (so it resolves under `/static/` in the built app, matching the `StaticFiles` mount) — swap the file to change the mark without touching any other config.
+
 ## Architecture
 
 **wlingo** is a FastAPI + Redis vocabulary quiz app. The backend exposes JSON API endpoints (`/api/*`); the frontend is a React 18 + TypeScript SPA built with Vite and served as static files.
