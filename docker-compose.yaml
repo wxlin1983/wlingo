@@ -5,7 +5,6 @@ services:
       - "8002:8002"
     environment:
       - REDIS_URL=redis://redis:6379/0
-      - ROOT_PATH=/wlingo
     depends_on:
       - redis
     networks:

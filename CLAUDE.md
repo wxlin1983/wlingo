@@ -42,7 +42,7 @@ App is available at **http://localhost:8002**. Vite dev server at **http://local
 
 The React SPA lives in `frontend/`. Stack: React 18 + TypeScript, Vite, Tailwind CSS v3, Framer Motion, React Router v6.
 
-**Root-path handling** — Docker Compose runs the app under `/wlingo`. At build time, set `VITE_ROOT_PATH=/wlingo` (the Dockerfile does this automatically). Locally, leave it empty (the `.env.development` default). This controls Vite's `base` for asset URLs, React Router's `basename`, and all API call prefixes in `api.ts`.
+**Root-path handling** — the app defaults to serving from `/` (Docker Compose and the Dockerfile both leave `VITE_ROOT_PATH`/`ROOT_PATH` unset). If you deploy it under a path prefix on a shared domain (e.g. `example.com/wlingo`), set `VITE_ROOT_PATH=/wlingo` at frontend build time and `ROOT_PATH=/wlingo` on the running container — but note the reverse proxy must also strip that prefix before forwarding to the backend, since FastAPI's `root_path` only affects URL generation, not route matching. This controls Vite's `base` for asset URLs, React Router's `basename`, and all API call prefixes in `api.ts`.
 
 Pages:
 - `StartPage` — topic selector, adaptive/random mode toggle, resume-session banner

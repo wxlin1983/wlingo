@@ -4,7 +4,7 @@ WORKDIR /frontend
 COPY frontend/package*.json ./
 RUN npm ci
 COPY frontend/ ./
-ARG VITE_ROOT_PATH=/wlingo
+ARG VITE_ROOT_PATH=
 ENV VITE_ROOT_PATH=$VITE_ROOT_PATH
 RUN npm run build
 
