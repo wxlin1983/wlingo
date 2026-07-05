@@ -1,282 +1,282 @@
-word,translation
-hello,你好
-world,世界
-cat,貓咪
-dog,狗狗
-computer,電腦
-keyboard,鍵盤
-monitor,螢幕
-mouse,滑鼠
-speaker,喇叭
-table,桌子
-chair,椅子
-book,書本
-pen,筆
-phone,電話
-shirt,衣服
-shoes,鞋子
-sun,太陽
-moon,月亮
-star,星星
-be,是 / 在
-have,有
-do,做
-say,說
-go,走 / 去
-come,來
-make,做 / 製作
-get,拿到
-know,知道
-take,拿
-see,看見
-look,看
-want,想要
-find,找到
-give,給
-ask,問
-tell,告訴
-call,叫 / 打電話
-help,幫助
-play,玩
-read,讀書
-write,寫字
-draw,畫畫
-run,跑
-walk,走路
-jump,跳
-sit,坐下
-stand,站立
-sleep,睡覺
-eat,吃
-drink,喝
-like,喜歡
-love,愛
-open,打開
-close,關上
-begin,開始
-end,結束
-stop,停止
-listen,聽
-live,居住
-study,學習
-clean,打掃
-wash,洗
-wear,穿 (衣服)
-use,使用
-buy,買
-sell,賣
-put,放
-turn,轉
-push,推
-pull,拉
-catch,抓住
-drop,掉落
-throw,丟
-cut,切
-fix,修理
-move,移動
-wait,等待
-thank,感謝
-people,人
-child,小孩
-friend,朋友
-family,家庭
-mom,媽媽
-dad,爸爸
-brother,哥哥 / 弟弟
-sister,姊姊 / 妹妹
-teacher,老師
-school,學校
-class,班級
-home,家
-room,房間
-door,門
-window,窗戶
-bed,床
-toy,玩具
-ball,球
-game,遊戲
-bike,腳踏車
-car,汽車
-bus,公車
-train,火車
-road,道路
-park,公園
-tree,樹
-flower,花
-grass,草地
-water,水
-food,食物
-apple,蘋果
-banana,香蕉
-milk,牛奶
-bread,麵包
-meat,肉
-fish,魚
-egg,蛋
-cake,蛋糕
-ice cream,冰淇淋
-time,時間
-hour,小時
-minute,分鐘
-day,天
-week,週
-month,月
-year,年
-morning,早上
-afternoon,下午
-night,晚上
-today,今天
-tomorrow,明天
-yesterday,昨天
-money,錢
-gift,禮物
-thing,東西 / 事情
-idea,想法
-answer,答案
-question,問題
-help,幫助
-name,名字
-color,顏色
-red,紅色
-blue,藍色
-yellow,黃色
-green,綠色
-white,白色
-black,黑色
-orange,橘色
-purple,紫色
-pink,粉紅色
-brown,咖啡色
-big,大的
-small,小的
-tall,高的
-short,矮的 / 短的
-long,長的
-new,新的
-old,舊的 / 老的
-happy,開心的
-sad,難過的
-angry,生氣的
-scared,害怕的
-good,好的
-bad,壞的
-easy,容易的
-hard,困難的
-fast,快的
-slow,慢的
-hot,熱的
-cold,冷的
-warm,溫暖的
-cool,涼爽的
-pretty,漂亮的
-ugly,醜的
-clean,乾淨的
-dirty,髒的
-loud,大聲的
-quiet,安靜的
-full,飽的 / 滿的
-empty,空的
-wet,濕的
-dry,乾的
-sweet,甜的
-salty,鹹的
-sour,酸的
-yummy,好吃的
-ready,準備好的
-wrong,錯誤的
-right,正確的 / 右邊
-here,這裡
-there,那裡
-up,上面
-down,下面
-in,在...裡
-out,在...外
-on,在...上
-under,在...下
-near,靠近
-far,遠
-with,和...一起
-without,沒有
-of,的
-and,和
-but,但是
-or,或者
-because,因為
-so,所以
-if,如果
-when,當...時
-what,什麼
-who,誰
-where,哪裡
-why,為什麼
-how,怎樣
-this,這個
-that,那個
-these,這些
-those,那些
-I,我
-you,你
-he,他
-she,她
-it,它
-we,我們
-they,他們
-my,我的
-your,你的
-his,他的
-her,她的
-its,它的
-our,我們的
-their,他們的
-me,我 (受格)
-him,他 (受格)
-her,她 (受格)
-us,我們 (受格)
-them,他們 (受格)
-one,一
-two,二
-three,三
-four,四
-five,五
-six,六
-seven,七
-eight,八
-nine,九
-ten,十
-zero,零
-some,一些
-many,很多
-much,許多
-all,全部
-no,不 / 沒有
-yes,是
-now,現在
-then,那時
-always,總是
-never,從不
-sometimes,有時候
-again,再一次
-just,只是
-only,只有
-very,非常
-too,太 (過度)
-also,也
-really,真的
-maybe,也許
-about,大約
-before,之前
-after,之後
-over,結束 / 上方
-under,下方
-through,穿過
-around,周圍
-with,跟
-from,從
-to,到
-at,在
-by,在旁邊
-must,必須
-can,能
-should,應該
-may,可以
+word,translation,explanation
+hello,你好,"""hello"" 是最常見的問候語，正式或非正式場合都適用；口語中常簡化成 ""hi""。"
+world,世界,"""world"" 指「世界」，常見片語如 ""all over the world""（全世界）。"
+cat,貓咪,"""cat"" 是貓的統稱；暱稱可以說 ""kitty"" 或 ""kitten""（小貓）。"
+dog,狗狗,"""dog"" 是狗的統稱；暱稱是 ""doggy"" 或 ""puppy""（小狗）。"
+computer,電腦,"""computer"" 源自 ""compute""（計算）+ ""-er""（...的東西），字面就是「計算的機器」。"
+keyboard,鍵盤,"""keyboard"" 由 ""key""（鍵）+ ""board""（板）組成，也可指鋼琴等樂器的鍵盤。"
+monitor,螢幕,"""monitor"" 除了「螢幕」，也可當動詞，意思是「監控、監測」。"
+mouse,滑鼠,"""mouse"" 原指老鼠，電腦滑鼠借用其外形命名；複數形是不規則的 ""mice""。"
+speaker,喇叭,"""speaker"" 由 ""speak""（說話）+ ""-er"" 組成，除了「喇叭」，也可指「演講者」。"
+table,桌子,"""table"" 除了「桌子」，也常見於片語 ""table of contents""（目錄）。"
+chair,椅子,"""chair"" 除了「椅子」，也可當動詞，意思是「主持（會議）」。"
+book,書本,"""book"" 除了「書」，也可當動詞用，意思是「預訂」，如 ""book a hotel""。"
+pen,筆,"""pen"" 專指原子筆、鋼筆一類的筆；鉛筆要說 ""pencil""。"
+phone,電話,"""phone"" 是 ""telephone"" 的縮寫，日常口語幾乎都直接說 ""phone""。"
+shirt,衣服,"""shirt"" 通常指有領子、扣子的襯衫；T恤要說 ""T-shirt""。"
+shoes,鞋子,"""shoes"" 通常用複數形，因為鞋子成雙出現，跟中文「一雙鞋」概念相似。"
+sun,太陽,"""sun"" 前面通常要加定冠詞說 ""the sun""，因為世界上只有一個太陽。"
+moon,月亮,"""moon"" 同樣常用 ""the moon""，指地球唯一的衛星。"
+star,星星,"""star"" 除了「星星」，也常用來指「明星」，如 ""movie star""。"
+be,是 / 在,"""be"" 是英文最重要的動詞之一，會隨主詞與時態變化為 am/is/are/was/were。"
+have,有,"""have"" 除了表示「擁有」，也常用來構成完成式，如 ""have done""。"
+do,做,"""do"" 除了本身「做」的意思，也常當助動詞來構成疑問句與否定句。"
+say,說,"""say"" 著重在「說出的內容」，常直接接引語，如 ""She said, 'Hi.'"""
+go,走 / 去,"""go"" 的過去式是不規則的 ""went""，過去分詞是 ""gone""。"
+come,來,"""come"" 表示朝說話者的方向移動，方向與 ""go""（遠離）相反。"
+make,做 / 製作,"""make"" 常用於「以原料製成某物」，如 ""made of wood""（木頭做的）。"
+get,拿到,"""get"" 是英文中用途最廣的動詞之一，可表示「得到、變得、到達」等多種意思。"
+know,知道,"""know"" 的過去式是不規則的 ""knew""，過去分詞是 ""known""。"
+take,拿,"""take"" 的過去式是不規則的 ""took""，過去分詞是 ""taken""。"
+see,看見,"""see"" 強調「看見」這個自然接收到的結果，跟主動去看的 ""look"" 不同。"
+look,看,"""look"" 強調「主動地看」，常搭配介系詞，如 ""look at""（看著）。"
+want,想要,"""want"" 後面接動詞時要用不定詞，如 ""want to go""（想去）。"
+find,找到,"""find"" 的過去式與過去分詞都是不規則的 ""found""。"
+give,給,"""give"" 常用於雙受詞句型，如 ""give someone something""。"
+ask,問,"""ask"" 除了「問問題」，也可表示「請求」，如 ""ask for help""。"
+tell,告訴,"""tell"" 後面通常直接接人，如 ""tell me""，不像 ""say"" 需要加介系詞。"
+call,叫 / 打電話,"""call"" 除了「打電話」，也常表示「稱呼」，如 ""call me Tom""。"
+help,幫助,"""help"" 後面接動詞時，不定詞的 ""to"" 常可省略，如 ""help me (to) do it""。"
+play,玩,"""play"" 除了「玩」，也用於運動與樂器，如 ""play basketball""、""play the piano""。"
+read,讀書,"""read"" 現在式與過去式拼法相同，但發音不同（現在式唸 /riːd/，過去式唸 /rɛd/）。"
+write,寫字,"""write"" 的過去式是不規則的 ""wrote""，過去分詞是 ""written""。"
+draw,畫畫,"""draw"" 通常指用筆畫線條、素描；用顏料上色則常說 ""paint""。"
+run,跑,"""run"" 除了「跑步」，也常用於「經營」，如 ""run a business""（經營事業）。"
+walk,走路,"""walk"" 除了當動詞「走路」，也可當名詞，如 ""take a walk""（去散步）。"
+jump,跳,"""jump"" 除了字面的「跳」，也常用於比喻，如 ""jump to a conclusion""（驟下結論）。"
+sit,坐下,"""sit"" 的過去式與過去分詞都是不規則的 ""sat""。"
+stand,站立,"""stand"" 除了「站立」，也常表示「忍受」，如 ""can't stand it""（無法忍受）。"
+sleep,睡覺,"""sleep"" 的過去式與過去分詞都是不規則的 ""slept""。"
+eat,吃,"""eat"" 的過去式是不規則的 ""ate""，過去分詞是 ""eaten""。"
+drink,喝,"""drink"" 的過去式是不規則的 ""drank""，過去分詞是 ""drunk""。"
+like,喜歡,"""like"" 後面接動詞時，動名詞或不定詞皆可，如 ""like swimming/to swim""。"
+love,愛,"""love"" 語氣比 ""like"" 更強烈，可表示強烈的喜愛或愛情。"
+open,打開,"""open"" 既可當動詞「打開」，也可當形容詞「開著的」，如 ""The door is open."""
+close,關上,"""close"" 當動詞唸 /kloʊz/（關閉），當形容詞「接近的」則唸 /kloʊs/。"
+begin,開始,"""begin"" 的過去式是不規則的 ""began""，過去分詞是 ""begun""，意思與 ""start"" 相近。"
+end,結束,"""end"" 既可當動詞「結束」，也可當名詞「結尾、末端」。"
+stop,停止,"""stop"" 後面接動名詞表示「停止做某事」，接不定詞則表示「停下來去做另一件事」。"
+listen,聽,"""listen"" 強調「主動地聽」，常搭配介系詞，如 ""listen to music""。"
+live,居住,"""live"" 當動詞唸 /lɪv/（居住），當形容詞「現場的」則唸 /laɪv/。"
+study,學習,"""study"" 除了「學習」，也常指「研讀某科目」，如 ""study math""。"
+clean,打掃,"這裡的 ""clean"" 當動詞用，表示「打掃、清潔」的動作。"
+wash,洗,"""wash"" 常見片語有 ""wash the dishes""（洗碗）、""wash your hands""（洗手）。"
+wear,穿 (衣服),"""wear"" 的過去式是不規則的 ""wore""，過去分詞是 ""worn""，指「穿著」的狀態而非穿上的動作（穿上動作用 ""put on""）。"
+use,使用,"""use"" 當動詞唸 /juːz/，當名詞「用途」則唸 /juːs/。"
+buy,買,"""buy"" 的過去式與過去分詞都是不規則的 ""bought""。"
+sell,賣,"""sell"" 的過去式與過去分詞都是不規則的 ""sold""，是 ""buy"" 的反義詞。"
+put,放,"""put"" 是三態同形的不規則動詞，現在式、過去式、過去分詞都是 ""put""。"
+turn,轉,"""turn"" 常見片語有 ""turn on/off""（打開／關掉）、""turn around""（轉身）。"
+push,推,"""push"" 與 ""pull"" 是常見的一組反義詞，常出現在門上的標示。"
+pull,拉,"""pull"" 與 ""push"" 相對，指「拉」的動作。"
+catch,抓住,"""catch"" 的過去式與過去分詞都是不規則的 ""caught""。"
+drop,掉落,"""drop"" 除了「掉落」，也常表示「放棄、退出」，如 ""drop a class""（退選課程）。"
+throw,丟,"""throw"" 的過去式是不規則的 ""threw""，過去分詞是 ""thrown""。"
+cut,切,"""cut"" 是三態同形的不規則動詞，現在式、過去式、過去分詞都是 ""cut""。"
+fix,修理,"""fix"" 是「修理」的口語常用說法，較正式可說 ""repair""。"
+move,移動,"""move"" 除了「移動」，也常表示「搬家」，如 ""move to a new city""。"
+wait,等待,"""wait"" 後面接人或事時要加介系詞 ""for""，如 ""wait for me""。"
+thank,感謝,"""thank"" 常用於固定用法 ""thank you""，比單獨使用 ""thank"" 更常見。"
+people,人,"""people"" 是 ""person"" 的複數形，本身已是複數，不需再加 s。"
+child,小孩,"""child"" 的複數形是不規則的 ""children""。"
+friend,朋友,"""friend"" 常見片語有 ""make friends""（交朋友）。"
+family,家庭,"""family"" 可視為單數或集合複數名詞，英式、美式用法略有不同。"
+mom,媽媽,"""mom"" 是美式說法，英式英語通常說 ""mum""。"
+dad,爸爸,"""dad"" 是 ""father"" 的暱稱口語說法。"
+brother,哥哥 / 弟弟,"""brother"" 不分年齡大小，泛指兄弟；要強調長幼需另外說明，如 ""older/younger brother""。"
+sister,姊姊 / 妹妹,"""sister"" 同樣不分年齡，泛指姊妹。"
+teacher,老師,"""teacher"" 由 ""teach""（教）+ ""-er"" 組成，指「教學的人」。"
+school,學校,"""school"" 除了「學校」這個場所，也常用來指「上學」這件事，如 ""go to school""。"
+class,班級,"""class"" 除了「班級」，也可指「一堂課」，如 ""English class""。"
+home,家,"""home"" 強調情感上的「家」，""house"" 則單純指「房屋」這個建築物。"
+room,房間,"""room"" 除了「房間」，也可當不可數名詞表示「空間」，如 ""no room""（沒有空間）。"
+door,門,"""door"" 常見片語 ""answer the door""（應門）。"
+window,窗戶,"""window"" 源自古北歐語，字面帶有「風之眼」的意思。"
+bed,床,"""bed"" 常見片語 ""go to bed""（去睡覺）、""make the bed""（整理床鋪）。"
+toy,玩具,"""toy"" 也可當動詞，意思是「玩弄」，如 ""toy with an idea""。"
+ball,球,"""ball"" 除了「球」，也可指「舞會」，如 ""a fancy ball""。"
+game,遊戲,"""game"" 除了「遊戲」，也常用於運動比賽，如 ""a basketball game""。"
+bike,腳踏車,"""bike"" 是 ""bicycle"" 的口語縮寫。"
+car,汽車,"""car"" 是最常見的「汽車」說法。"
+bus,公車,"""bus"" 是 ""omnibus"" 的縮寫。"
+train,火車,"""train"" 除了「火車」，也可當動詞，意思是「訓練」。"
+road,道路,"""road"" 泛指一般道路，""street"" 則多指城鎮裡兩旁有建築物的街道。"
+park,公園,"""park"" 除了「公園」，也常當動詞，意思是「停車」。"
+tree,樹,"""tree"" 常見片語 ""family tree""（家族樹、族譜）。"
+flower,花,"""flower"" 也可當動詞，意思是「開花」。"
+grass,草地,"""grass"" 是不可數名詞，指草的統稱。"
+water,水,"""water"" 通常是不可數名詞；當動詞用時意思是「澆水」。"
+food,食物,"""food"" 通常是不可數名詞，泛指食物。"
+apple,蘋果,"""apple"" 常見於諺語 ""An apple a day keeps the doctor away.""（一天一蘋果，醫生遠離我）。"
+banana,香蕉,"""banana"" 常見片語 ""go bananas""（發瘋、抓狂）。"
+milk,牛奶,"""milk"" 通常是不可數名詞，當動詞用時意思是「擠奶」。"
+bread,麵包,"""bread"" 是不可數名詞，要說「一條麵包」需說 ""a loaf of bread""。"
+meat,肉,"""meat"" 是不可數名詞，泛指肉類。"
+fish,魚,"""fish"" 當複數時通常維持原形不變，指多種魚類時才用 ""fishes""。"
+egg,蛋,"""egg"" 常見片語 ""egg on""（慫恿、煽動）。"
+cake,蛋糕,"""cake"" 常見片語 ""a piece of cake""（小事一樁）。"
+ice cream,冰淇淋,"""ice cream"" 由 ""ice""（冰）+ ""cream""（奶油）組成。"
+time,時間,"""time"" 除了「時間」，也常用於表示「次數」，如 ""three times""（三次）。"
+hour,小時,"""hour"" 開頭的 h 不發音，前面要用 ""an"" 而非 ""a""，如 ""an hour""。"
+minute,分鐘,"""minute"" 當名詞唸 /ˈmɪnɪt/（分鐘），當形容詞「微小的」則唸 /maɪˈnjuːt/。"
+day,天,"""day"" 常見片語 ""day by day""（一天一天地）。"
+week,週,"""week"" 常見片語 ""this week""（這週）、""next week""（下週）。"
+month,月,"""month"" 常見片語 ""once a month""（一個月一次）。"
+year,年,"""year"" 常見片語 ""New Year""（新年）。"
+morning,早上,"""morning"" 常見問候語 ""Good morning.""（早安）。"
+afternoon,下午,"""afternoon"" 常見問候語 ""Good afternoon.""（午安）。"
+night,晚上,"""night"" 常見問候語 ""Good night.""（晚安），用於睡前道別。"
+today,今天,"""today"" 由 ""to""（在）+ ""day""（日）組成。"
+tomorrow,明天,"""tomorrow"" 常見片語 ""See you tomorrow.""（明天見）。"
+yesterday,昨天,"""yesterday"" 常見片語 ""the day before yesterday""（前天）。"
+money,錢,"""money"" 是不可數名詞，不能說 ""a money""，要說 ""some money""。"
+gift,禮物,"""gift"" 除了「禮物」，也可指「天賦」，如 ""a gift for music""。"
+thing,東西 / 事情,"""thing"" 是泛指的名詞，可代替任何具體或抽象的事物。"
+idea,想法,"""idea"" 常見片語 ""have an idea""（有個主意）、""no idea""（不知道）。"
+answer,答案,"""answer"" 既可當名詞「答案」，也可當動詞「回答」。"
+question,問題,"""question"" 常見片語 ""ask a question""（問問題）。"
+help,幫助,"""help"" 後面接動詞時，不定詞的 ""to"" 常可省略，如 ""help me (to) do it""。"
+name,名字,"""name"" 也可當動詞，意思是「命名」，如 ""name a baby""。"
+color,顏色,"""color"" 是美式拼法，英式英語拼作 ""colour""。"
+red,紅色,"""red"" 常見片語 ""in the red""（虧損、負債）。"
+blue,藍色,"""blue"" 除了顏色，也常表示「憂鬱」，如 ""feel blue""。"
+yellow,黃色,"""yellow"" 在英文口語中有時暗指「膽小」。"
+green,綠色,"""green"" 除了顏色，也常表示「環保」，如 ""go green""，或指「沒有經驗」。"
+white,白色,"""white"" 常見片語 ""white lie""（善意的謊言）。"
+black,黑色,"""black"" 常見片語 ""black and white""（黑白分明、白紙黑字）。"
+orange,橘色,"""orange"" 這個字同時是顏色也是水果「柳橙」的名稱。"
+purple,紫色,"""purple"" 常見片語 ""born to the purple""（出身貴族）。"
+pink,粉紅色,"""pink"" 常見片語 ""in the pink""（健康狀態極佳）。"
+brown,咖啡色,"""brown"" 常見片語 ""brown bag""（自備午餐的紙袋）。"
+big,大的,"""big"" 是最常見的「大」，較口語；正式一點可用 ""large""。"
+small,小的,"""small"" 與 ""little"" 意思相近，但 ""little"" 常帶有情感色彩。"
+tall,高的,"""tall"" 通常用於形容人、建築物等高度，""high"" 則多用於物體離地面的高度。"
+short,矮的 / 短的,"""short"" 可形容身高矮，也可形容長度、時間短。"
+long,長的,"""long"" 常見片語 ""as long as""（只要）。"
+new,新的,"""new"" 的反義詞除了 ""old""，也常用 ""used""（二手的）來對比全新品。"
+old,舊的 / 老的,"""old"" 既可形容年紀大，也可形容物品舊，需視上下文判斷對應中文。"
+happy,開心的,"""happy"" 常見片語 ""Happy Birthday!""（生日快樂）。"
+sad,難過的,"""sad"" 是最基本的「難過」，語氣比 ""depressed""（憂鬱的）輕。"
+angry,生氣的,"""angry"" 較口語的說法是 ""mad""（美式英語常用）。"
+scared,害怕的,"""scared"" 常見用法 ""scared of""（害怕...），如 ""scared of dogs""。"
+good,好的,"""good"" 的比較級是不規則的 ""better""，最高級是 ""best""。"
+bad,壞的,"""bad"" 的比較級是不規則的 ""worse""，最高級是 ""worst""。"
+easy,容易的,"""easy"" 常見片語 ""take it easy""（放輕鬆）。"
+hard,困難的,"""hard"" 除了「困難的」，也可表示「用力的」，如 ""hard work""（努力工作）。"
+fast,快的,"""fast"" 既可當形容詞也可當副詞，拼法不變，如 ""run fast""。"
+slow,慢的,"""slow"" 也可當動詞，如 ""slow down""（放慢速度）。"
+hot,熱的,"""hot"" 除了溫度高，也常表示食物「辣」，需依上下文判斷。"
+cold,冷的,"""cold"" 也可當名詞，指「感冒」，如 ""catch a cold""。"
+warm,溫暖的,"""warm"" 除了溫暖，也常形容個性「親切、熱情」。"
+cool,涼爽的,"""cool"" 除了涼爽，口語中也常表示「酷、很棒」。"
+pretty,漂亮的,"""pretty"" 當形容詞是「漂亮的」，當副詞則表示「相當、頗」，如 ""pretty good""。"
+ugly,醜的,"""ugly"" 也可用於比喻，如 ""an ugly situation""（棘手的局面）。"
+clean,乾淨的,"這裡的 ""clean"" 當形容詞用，表示「乾淨的」狀態。"
+dirty,髒的,"""dirty"" 也可用於比喻，如 ""a dirty trick""（卑鄙的手段）。"
+loud,大聲的,"""loud"" 常見片語 ""out loud""（大聲地），如 ""read out loud""。"
+quiet,安靜的,"""quiet"" 常見用法 ""keep quiet""（保持安靜）。"
+full,飽的 / 滿的,"""full"" 常見片語 ""full of""（充滿...）。"
+empty,空的,"""empty"" 也可當動詞，意思是「把...清空」。"
+wet,濕的,"""wet"" 的比較級可以是 ""wetter""，字尾子音需重複。"
+dry,乾的,"""dry"" 也可當動詞，意思是「使乾燥、晾乾」。"
+sweet,甜的,"""sweet"" 除了味覺上的甜，也常表示「貼心的、可愛的」。"
+salty,鹹的,"""salty"" 由 ""salt""（鹽）+ ""-y""（形容詞字尾）組成。"
+sour,酸的,"""sour"" 也可用於比喻，如 ""sour relationship""（不愉快的關係）。"
+yummy,好吃的,"""yummy"" 是較口語、可愛的說法，常用於對小孩說話或形容美食。"
+ready,準備好的,"""ready"" 常見片語 ""get ready""（準備好）。"
+wrong,錯誤的,"""wrong"" 常見片語 ""What's wrong?""（怎麼了？）。"
+right,正確的 / 右邊,"""right"" 除了「正確的」和「右邊」，也常用於加強語氣，如 ""right now""（此刻）。"
+here,這裡,"""here"" 常見片語 ""over here""（在這邊）。"
+there,那裡,"""there"" 常用於句首的存在句型，如 ""There is/are...""（有...）。"
+up,上面,"""up"" 常與動詞組成片語動詞，如 ""wake up""（醒來）。"
+down,下面,"""down"" 常與動詞組成片語動詞，如 ""sit down""（坐下）。"
+in,在...裡,"""in"" 用於較大或封閉的空間，如 ""in the box""（在盒子裡）。"
+out,在...外,"""out"" 常與動詞組成片語動詞，如 ""go out""（出去）。"
+on,在...上,"""on"" 用於接觸表面的位置，如 ""on the table""（在桌子上）。"
+under,在...下,"""under"" 表示位置在...之下，也常用於比喻，如 ""under pressure""（承受壓力）。"
+near,靠近,"""near"" 既可當介系詞也可當形容詞，如 ""near the door""。"
+far,遠,"""far"" 常見片語 ""so far""（到目前為止）。"
+with,和...一起,"""with"" 表示「和某人一起」或「使用某工具」，如 ""cut with a knife""。"
+without,沒有,"""without"" 是 ""with"" 的反義詞，表示「沒有、缺少」。"
+of,的,"""of"" 是英文中使用頻率最高的介系詞之一，常表示所屬關係。"
+and,和,"""and"" 是最基本的連接詞，用來連接對等的字詞或句子。"
+but,但是,"""but"" 用來表示轉折，連接語意相反或對比的內容。"
+or,或者,"""or"" 用來表示選擇，如 ""tea or coffee""（茶或咖啡）。"
+because,因為,"""because"" 後面直接接完整子句，用來說明原因。"
+so,所以,"""so"" 除了表示「所以」，也常用來加強語氣，如 ""so beautiful""（好漂亮）。"
+if,如果,"""if"" 用來引導條件子句，常見於假設語氣。"
+when,當...時,"""when"" 除了當疑問詞「何時」，也可當連接詞引導時間子句。"
+what,什麼,"""what"" 是最常用的疑問詞之一，用來詢問事物。"
+who,誰,"""who"" 用來詢問「誰」，指人；受格形式是 ""whom""，但口語常直接用 ""who""。"
+where,哪裡,"""where"" 用來詢問地點。"
+why,為什麼,"""why"" 用來詢問原因，回答常以 ""because"" 開頭。"
+how,怎樣,"""how"" 用來詢問方式、程度或狀態，如 ""How are you?"""
+this,這個,"""this"" 用於指稱距離說話者較近的單數事物。"
+that,那個,"""that"" 用於指稱距離說話者較遠的單數事物。"
+these,這些,"""these"" 是 ""this"" 的複數形。"
+those,那些,"""those"" 是 ""that"" 的複數形。"
+I,我,"""I"" 作為主詞永遠大寫，是英文中唯一單獨大寫的代名詞。"
+you,你,"""you"" 不分單複數，也不分「你」與「妳」，男女通用。"
+he,他,"""he"" 用於指稱男性第三人稱單數。"
+she,她,"""she"" 用於指稱女性第三人稱單數。"
+it,它,"""it"" 用於指稱物品、動物或抽象概念的第三人稱單數。"
+we,我們,"""we"" 用於指稱包含說話者在內的一群人。"
+they,他們,"""they"" 除了指第三人稱複數，現代英語也常用來指性別不明的單一個人。"
+my,我的,"""my"" 是所有格代名詞，放在名詞前，如 ""my book""。"
+your,你的,"""your"" 不分單複數所有格，都是同一個字。"
+his,他的,"""his"" 既可放在名詞前（his book），也可單獨使用（It's his.）。"
+her,她的,"""her"" 當所有格時放在名詞前，如 ""her book""。"
+its,它的,"""its"" 是所有格，注意與 ""it's""（it is 的縮寫）拼法不同，容易混淆。"
+our,我們的,"""our"" 是所有格代名詞，放在名詞前，如 ""our house""。"
+their,他們的,"""their"" 是所有格代名詞，也常用於指單一、性別不明的人。"
+me,我 (受格),"""me"" 是 ""I"" 的受格形式，用於動詞或介系詞之後。"
+him,他 (受格),"""him"" 是 ""he"" 的受格形式。"
+her,她 (受格),"""her"" 也可作為受格形式，拼法與所有格 ""her"" 相同。"
+us,我們 (受格),"""us"" 是 ""we"" 的受格形式。"
+them,他們 (受格),"""them"" 是 ""they"" 的受格形式。"
+one,一,"""one"" 除了數字，也常當代名詞用，如 ""this one""（這一個）。"
+two,二,"""two"" 拼法容易與 ""too""（也）、""to""（到）混淆，三者發音相同。"
+three,三,"""three"" 的 ""th"" 音對中文母語者常是發音難點。"
+four,四,"""four"" 拼法容易與 ""for""（為了）混淆，發音相同。"
+five,五,"""five"" 常見片語 ""high five""（擊掌）。"
+six,六,"""six"" 常見於時間、數量表達。"
+seven,七,"""seven"" 常見片語 ""lucky seven""（幸運數字七）。"
+eight,八,"""eight"" 拼法中 ""gh"" 不發音。"
+nine,九,"""nine"" 常見片語 ""dressed to the nines""（盛裝打扮）。"
+ten,十,"""ten"" 是十進位的基礎數字，常用於構成 ""-teen"" 和 ""-ty"" 的數字。"
+zero,零,"""zero"" 在電話號碼或體育比分中口語常說 ""oh""。"
+some,一些,"""some"" 通常用於肯定句，疑問句與否定句則常改用 ""any""。"
+many,很多,"""many"" 用於可數名詞前，如 ""many books""。"
+much,許多,"""much"" 用於不可數名詞前，如 ""much water""。"
+all,全部,"""all"" 常見片語 ""all day""（一整天）。"
+no,不 / 沒有,"""no"" 用於名詞前表示否定，如 ""no money""（沒有錢），與 ""not"" 用法不同。"
+yes,是,"""yes"" 是最基本的肯定回答，口語中常簡化為 ""yeah""。"
+now,現在,"""now"" 常見片語 ""right now""（現在馬上）。"
+then,那時,"""then"" 除了「那時」，也常表示「接著、然後」，用於敘述先後順序。"
+always,總是,"""always"" 是頻率副詞，通常放在一般動詞前、be動詞後。"
+never,從不,"""never"" 本身已含否定意思，句中不需再加 ""not""。"
+sometimes,有時候,"""sometimes"" 也可放在句首，語氣較強調。"
+again,再一次,"""again"" 常見片語 ""once again""（再一次）。"
+just,只是,"""just"" 除了「只是」，也常表示「剛剛」，如 ""just arrived""（剛到）。"
+only,只有,"""only"" 的位置會影響語意重點，放在不同字前面意思會有微妙差異。"
+very,非常,"""very"" 是常見的程度副詞，用來加強形容詞或副詞的語氣。"
+too,太 (過度),"""too"" 放在句尾表示「也」，放在形容詞前則表示「太過」。"
+also,也,"""also"" 通常放在句中，語氣比句尾的 ""too"" 稍正式。"
+really,真的,"""really"" 常用來加強語氣，如 ""really good""（真的很好）。"
+maybe,也許,"""maybe"" 通常放在句首，語氣較口語；""perhaps"" 較正式。"
+about,大約,"""about"" 除了「大約」，也常表示「關於」，如 ""talk about""。"
+before,之前,"""before"" 既可當介系詞、連接詞，也可當副詞，如 ""the day before""。"
+after,之後,"""after"" 與 ""before"" 是一組反義詞，都可表示時間或順序。"
+over,結束 / 上方,"""over"" 有多種意思，可表示「結束」，也可表示「在...上方」。"
+under,下方,"""under"" 也常用於抽象意義，如 ""under construction""（施工中）。"
+through,穿過,"""through"" 常見片語 ""go through""（經歷、通過）。"
+around,周圍,"""around"" 除了「周圍」，口語中也常表示「大約」，與 ""about"" 相近。"
+with,跟,"這裡的 ""with"" 表示「陪伴、跟隨」，用法與 ""和...一起"" 相近但更簡潔。"
+from,從,"""from"" 常用來表示起點，如 ""from Taiwan""（來自台灣）。"
+to,到,"""to"" 除了表示方向，也常用於構成不定詞，如 ""to go""。"
+at,在,"""at"" 通常用於較精確的時間點或地點，如 ""at 3 o'clock""。"
+by,在旁邊,"""by"" 除了「在旁邊」，也常表示交通方式，如 ""by bus""（搭公車）。"
+must,必須,"""must"" 表示強烈的義務或推測，語氣比 ""should"" 更強。"
+can,能,"""can"" 的過去式是 ""could""，也常用來表示禮貌的請求。"
+should,應該,"""should"" 表示建議或義務，語氣比 ""must"" 較委婉。"
+may,可以,"""may"" 除了「可以」，也常表示「可能」，如 ""It may rain.""（可能會下雨）。"

@@ -143,6 +143,7 @@ def submit_answer(
         user_answer=user_answer_str,
         correct_answer=current_q.translation,
         is_correct=is_correct,
+        explanation=current_q.explanation,
     )
     session_data.answers.append(record)
     redis.set(

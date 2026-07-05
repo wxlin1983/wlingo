@@ -58,8 +58,8 @@ def test_get_words_returns_correct_records(tmp_path):
     )
     vm = VocabularyManager(str(tmp_path))
     words = vm.get_words("Animals")
-    assert {"word": "cat", "translation": "猫"} in words
-    assert {"word": "dog", "translation": "狗"} in words
+    assert {"word": "cat", "translation": "猫", "explanation": ""} in words
+    assert {"word": "dog", "translation": "狗", "explanation": ""} in words
 
 
 def test_get_words_unknown_topic_returns_empty(tmp_path):

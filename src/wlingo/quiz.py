@@ -49,6 +49,7 @@ class RandomQuizGenerator(QuizGenerator):
                 word=item["word"],
                 translation=item["translation"],
                 options=self._generate_options(item["translation"], word_list),
+                explanation=item.get("explanation", ""),
             )
             for item in selected_words
         ]

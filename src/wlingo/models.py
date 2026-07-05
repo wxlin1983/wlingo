@@ -9,6 +9,7 @@ from pydantic import BaseModel
 class Word(TypedDict):
     word: str
     translation: str
+    explanation: str
 
 
 class Topic(TypedDict):
@@ -22,6 +23,7 @@ class Question(BaseModel):
     word: str
     translation: str
     options: list[str]
+    explanation: str = ""
 
 
 class AnswerRecord(BaseModel):
@@ -29,6 +31,7 @@ class AnswerRecord(BaseModel):
     user_answer: str
     correct_answer: str
     is_correct: bool
+    explanation: str = ""
 
 
 class SessionData(BaseModel):

@@ -93,6 +93,11 @@ export default function ResultPage() {
                 <p className="text-sm text-green-600 truncate">
                   Correct: {ans.correct_answer}
                 </p>
+                {!ans.is_correct && ans.explanation && (
+                  <p className="text-sm text-gray-500 mt-1 italic">
+                    {ans.explanation}
+                  </p>
+                )}
               </div>
             </motion.div>
           ))}

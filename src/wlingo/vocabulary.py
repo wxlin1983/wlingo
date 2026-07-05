@@ -31,6 +31,10 @@ class VocabularyManager:
                 file_name = os.path.splitext(os.path.basename(file_path))[0]
                 df = pd.read_csv(file_path, encoding="utf-8")
                 if "word" in df.columns and "translation" in df.columns:
+                    if "explanation" in df.columns:
+                        df["explanation"] = df["explanation"].fillna("")
+                    else:
+                        df["explanation"] = ""
                     self.vocab_sets[file_name] = df.to_dict("records")
                     logger.info(f"Loaded {len(df)} words from {file_name}")
                 else:
@@ -41,11 +45,11 @@ class VocabularyManager:
         if not self.vocab_sets:
             logger.warning("No CSV files found. Loading dummy data.")
             self.vocab_sets["default_dummy"] = [
-                {"word": "Hund", "translation": "dog"},
-                {"word": "Katze", "translation": "cat"},
-                {"word": "Baum", "translation": "tree"},
-                {"word": "Haus", "translation": "house"},
-                {"word": "Wasser", "translation": "water"},
+                {"word": "Hund", "translation": "dog", "explanation": ""},
+                {"word": "Katze", "translation": "cat", "explanation": ""},
+                {"word": "Baum", "translation": "tree", "explanation": ""},
+                {"word": "Haus", "translation": "house", "explanation": ""},
+                {"word": "Wasser", "translation": "water", "explanation": ""},
             ]
 
     def get_words(self, topic: str) -> list[Word]:
