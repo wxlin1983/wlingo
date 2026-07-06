@@ -5,7 +5,7 @@ interface Props {
 
 const modes: { value: 'adaptive' | 'random'; label: string; desc: string }[] = [
   { value: 'adaptive', label: 'Adaptive', desc: 'Focuses on your weak spots' },
-  { value: 'random',   label: 'Random',   desc: 'Pure shuffle' },
+  { value: 'random', label: 'Random', desc: 'Pure shuffle' },
 ]
 
 export default function ModeToggle({ value, onChange }: Props) {
@@ -13,15 +13,13 @@ export default function ModeToggle({ value, onChange }: Props) {
     <div>
       <label className="block text-sm font-semibold text-gray-600 mb-2">Quiz Mode</label>
       <div className="flex gap-3">
-        {modes.map(m => {
+        {modes.map((m) => {
           const active = value === m.value
           return (
             <label
               key={m.value}
               className={`flex-1 flex items-center gap-3 px-4 py-3 rounded-xl border-2 cursor-pointer transition-all select-none ${
-                active
-                  ? 'border-sky-500 bg-sky-50'
-                  : 'border-gray-200 hover:border-gray-300'
+                active ? 'border-sky-500 bg-sky-50' : 'border-gray-200 hover:border-gray-300'
               }`}
             >
               <input

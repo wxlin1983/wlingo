@@ -14,7 +14,9 @@ export default function ResumeCard({ session, className = '' }: Props) {
     : `Question ${(session.current_index ?? 0) + 1} of ${session.total_questions}`
 
   return (
-    <div className={`flex items-center justify-between gap-4 bg-sky-50 border border-sky-200 rounded-xl px-4 py-3 ${className}`}>
+    <div
+      className={`flex items-center justify-between gap-4 bg-sky-50 border border-sky-200 rounded-xl px-4 py-3 ${className}`}
+    >
       <div className="min-w-0">
         <p className="font-semibold text-sky-800 text-sm truncate">{session.topic}</p>
         <p className="text-sky-600 text-xs">{progress}</p>

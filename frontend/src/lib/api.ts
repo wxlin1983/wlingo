@@ -5,7 +5,7 @@ const BASE = import.meta.env.VITE_ROOT_PATH || ''
 async function json<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(BASE + path, init)
   if (!res.ok) {
-    const body = await res.json().catch(() => ({})) as { detail?: string }
+    const body = (await res.json().catch(() => ({}))) as { detail?: string }
     throw new Error(body.detail ?? `${res.status} ${res.statusText}`)
   }
   return res.json() as Promise<T>

@@ -60,9 +60,18 @@ Open **http://localhost:5173** — the dev server proxies API calls through to t
 ## Running Tests
 
 ```bash
+# Backend
 uv sync --extra test
 uv run pytest tests/ -v
+
+# Frontend
+cd frontend
+npm run lint      # eslint
+npm run typecheck # tsc --noEmit
+npm run test      # vitest run
 ```
+
+Both suites also run in CI (`.github/workflows/ci.yml`) on every push/PR, and the Docker build fails if either fails.
 
 ## Adding Vocabulary Topics
 

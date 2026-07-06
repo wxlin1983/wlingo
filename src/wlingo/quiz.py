@@ -1,5 +1,6 @@
 import random
 from abc import ABC, abstractmethod
+
 from .models import Question, Word
 from .vocabulary import VocabularyManager
 
@@ -32,7 +33,8 @@ class RandomQuizGenerator(QuizGenerator):
     ) -> list[Question]:
         """Generate `count` questions for `topic`.
 
-        word_weights maps word → wrong-answer count; higher count raises selection probability.
+        word_weights maps word → wrong-answer count; higher count raises
+        selection probability.
         """
         word_list = self.vocab_manager.get_words(topic)
         if not word_list:
@@ -90,7 +92,8 @@ class RandomQuizGenerator(QuizGenerator):
         if len(all_translations) < num_options:
             incorrect = list(all_translations)
             while len(incorrect) < num_options:
-                # Pad with synthetic placeholders when vocab is too small for real distractors
+                # Pad with synthetic placeholders when vocab is too small
+                # for real distractors
                 incorrect.append(f"Option {len(incorrect) + 1}")
         else:
             incorrect = random.sample(list(all_translations), num_options)

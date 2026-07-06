@@ -8,11 +8,11 @@ interface Props {
 }
 
 const stateClass: Record<OptionState, string> = {
-  idle:           'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100 hover:border-gray-300 cursor-pointer',
-  correct:        'bg-green-50 border-green-500 text-green-800 cursor-default animate-pulse_correct',
-  wrong:          'bg-red-50 border-red-400 text-red-800 cursor-default animate-shake',
+  idle: 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100 hover:border-gray-300 cursor-pointer',
+  correct: 'bg-green-50 border-green-500 text-green-800 cursor-default animate-pulse_correct',
+  wrong: 'bg-red-50 border-red-400 text-red-800 cursor-default animate-shake',
   'correct-reveal': 'bg-green-50 border-green-400 text-green-700 cursor-default',
-  disabled:       'bg-gray-50 border-gray-200 text-gray-400 cursor-default opacity-60',
+  disabled: 'bg-gray-50 border-gray-200 text-gray-400 cursor-default opacity-60',
 }
 
 export default function OptionButton({ label, hotkey, state, onClick }: Props) {

@@ -15,15 +15,19 @@ export default function StartPage() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    api.topics()
-      .then(t => {
+    api
+      .topics()
+      .then((t) => {
         setTopics(t)
         if (t.length > 0) setSelectedTopic(t[0].id)
       })
       .catch(() => setError('Failed to load topics'))
 
-    api.session()
-      .then(s => { if (s.active) setSession(s) })
+    api
+      .session()
+      .then((s) => {
+        if (s.active) setSession(s)
+      })
       .catch(() => {})
   }, [])
 
@@ -39,7 +43,7 @@ export default function StartPage() {
       if (res.type === 'opaqueredirect' || res.ok) {
         navigate('/quiz/0')
       } else {
-        const body = await res.json().catch(() => ({})) as { detail?: string }
+        const body = (await res.json().catch(() => ({}))) as { detail?: string }
         setError(body.detail ?? 'Failed to start quiz')
       }
     } catch {
@@ -54,38 +58,29 @@ export default function StartPage() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <h1 className="text-6xl font-extrabold text-green-500 tracking-tight mb-2">
-            wlingo
-          </h1>
+          <h1 className="text-6xl font-extrabold text-green-500 tracking-tight mb-2">wlingo</h1>
           <p className="text-gray-400 text-lg">Choose a topic and start learning!</p>
         </div>
 
         {/* Resume banner */}
-        {session && (
-          <ResumeCard session={session} className="mb-4" />
-        )}
+        {session && <ResumeCard session={session} className="mb-4" />}
 
         {/* Main card */}
         <div className="bg-white rounded-2xl shadow-lg p-8 space-y-6">
           {/* Topic selector */}
           <div>
-            <label
-              htmlFor="topic"
-              className="block text-sm font-semibold text-gray-600 mb-2"
-            >
+            <label htmlFor="topic" className="block text-sm font-semibold text-gray-600 mb-2">
               Vocabulary Set
             </label>
             <select
               id="topic"
               value={selectedTopic}
-              onChange={e => setSelectedTopic(e.target.value)}
+              onChange={(e) => setSelectedTopic(e.target.value)}
               disabled={topics.length === 0}
               className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-sky-400 focus:outline-none text-gray-700 bg-white disabled:opacity-50 transition-colors"
             >
-              {topics.length === 0 && (
-                <option>Loading…</option>
-              )}
-              {topics.map(t => (
+              {topics.length === 0 && <option>Loading…</option>}
+              {topics.map((t) => (
                 <option key={t.id} value={t.id}>
                   {t.name} ({t.count} words)
                 </option>

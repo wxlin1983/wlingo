@@ -1,9 +1,12 @@
 # Stage 0: Build React frontend
+# Lint and test run before the production build, so a failure of either
+# stops the image build here — mirroring the backend test stage below.
 FROM node:20-slim AS frontend-build
 WORKDIR /frontend
 COPY frontend/package*.json ./
 RUN npm ci
 COPY frontend/ ./
+RUN npm run lint && npm run test
 ARG VITE_ROOT_PATH=
 ENV VITE_ROOT_PATH=$VITE_ROOT_PATH
 RUN npm run build

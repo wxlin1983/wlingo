@@ -6,9 +6,10 @@ The TestClient is function-scoped, giving each test a clean slate.
 
 import json
 import uuid
-import pytest
-import fakeredis
 from datetime import datetime, timedelta
+
+import fakeredis
+import pytest
 from fastapi.testclient import TestClient
 
 from wlingo.app import create_app
@@ -16,7 +17,6 @@ from wlingo.config import settings
 from wlingo.models import Question, SessionData
 from wlingo.routers.api import _update_user_stats
 from wlingo.routers.deps import get_redis
-
 
 # ---------------------------------------------------------------------------
 # Fixture
@@ -787,8 +787,8 @@ def test_result_api_with_zero_questions_returns_zero_score(client):
 
 
 def test_weighted_sample_returns_exact_count():
-    from wlingo.quiz import RandomQuizGenerator
     from wlingo.globals import vocab_manager
+    from wlingo.quiz import RandomQuizGenerator
 
     gen = RandomQuizGenerator(vocab_manager)
     word_list = vocab_manager.get_words(vocab_manager.get_topics()[0]["id"])
@@ -800,8 +800,8 @@ def test_weighted_sample_returns_exact_count():
 
 
 def test_weighted_sample_no_duplicates():
-    from wlingo.quiz import RandomQuizGenerator
     from wlingo.globals import vocab_manager
+    from wlingo.quiz import RandomQuizGenerator
 
     gen = RandomQuizGenerator(vocab_manager)
     word_list = vocab_manager.get_words(vocab_manager.get_topics()[0]["id"])

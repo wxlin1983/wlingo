@@ -8,7 +8,8 @@ vocabulary or improving explanations — the running app never calls an LLM.
 
 Usage:
     uv sync --extra scripts
-    ANTHROPIC_API_KEY=... uv run python scripts/generate_explanations.py [--topic NAME] [--force] [--dry-run]
+    ANTHROPIC_API_KEY=... uv run python scripts/generate_explanations.py \
+        [--topic NAME] [--force] [--dry-run]
 """
 
 import argparse
@@ -113,7 +114,7 @@ def process_csv(
             print(f"  batch {start}-{end} failed: {exc}", file=sys.stderr)
             continue
 
-        for i, explanation in zip(batch_idx, explanations):
+        for i, explanation in zip(batch_idx, explanations, strict=True):
             if dry_run:
                 print(f"  {df.at[i, 'word']!r}: {explanation}")
             else:

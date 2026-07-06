@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
@@ -7,9 +8,7 @@ export default defineConfig(({ mode }) => ({
   plugins: [react()],
   // In dev: serve from root so HMR works cleanly.
   // In production: assets are under /static/ (optionally prefixed with ROOT_PATH).
-  base: mode === 'production'
-    ? (rootPath ? `${rootPath}/static/` : '/static/')
-    : '/',
+  base: mode === 'production' ? (rootPath ? `${rootPath}/static/` : '/static/') : '/',
   build: {
     outDir: 'dist',
     emptyOutDir: true,
@@ -21,5 +20,9 @@ export default defineConfig(({ mode }) => ({
       '/start': 'http://localhost:8002',
       '/submit_answer': 'http://localhost:8002',
     },
+  },
+  test: {
+    environment: 'jsdom',
+    setupFiles: ['./src/test/setup.ts'],
   },
 }))

@@ -1,6 +1,6 @@
 import pytest
-from wlingo.quiz import RandomQuizGenerator, QuizFactory
 
+from wlingo.quiz import QuizFactory, RandomQuizGenerator
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -82,7 +82,8 @@ class TestRandomQuizGenerator:
         assert len(questions) == 10
 
     def test_weighted_generate_prefers_boosted_words(self):
-        """A maximally boosted word should appear significantly more often than chance."""
+        """A maximally boosted word should appear significantly more often
+        than chance."""
         target = SAMPLE_WORDS[0]["word"]
         weights = {target: 3}  # weight = 1 + min(3,3) = 4x vs 1x for others
 

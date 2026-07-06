@@ -118,7 +118,8 @@ def get_question_data(
         return JSONResponse({"error": "Index error"}, status_code=404)
 
     current_q = session_data.prepared_questions[index]
-    # None when not yet answered; lets the frontend show review state for revisited questions
+    # None when not yet answered; lets the frontend show review state for
+    # revisited questions
     record = session_data.answers[index] if index < len(session_data.answers) else None
 
     return {
@@ -170,7 +171,8 @@ def submit_answer(
         ex=timedelta(minutes=settings.SESSION_TIMEOUT_MINUTES),
     )
 
-    # Track wrong answers for adaptive mode; "standard" treated as alias for backward compat
+    # Track wrong answers for adaptive mode; "standard" treated as alias
+    # for backward compat
     if session_data.mode in ("adaptive", "standard") and user_id:
         _update_user_stats(
             redis, user_id, session_data.topic, current_q.word, is_correct

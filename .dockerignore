@@ -1,0 +1,21 @@
+# Version control / editor
+.git
+.gitignore
+
+# Python
+.venv
+__pycache__
+*.pyc
+.pytest_cache
+.ruff_cache
+src/log
+src/db
+
+# Frontend
+frontend/node_modules
+frontend/dist
+
+# Docs (not needed inside the image)
+README.md
+CLAUDE.md
+LICENSE

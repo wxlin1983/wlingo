@@ -11,7 +11,8 @@ export default function ResultPage() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    api.result()
+    api
+      .result()
       .then(setResult)
       .catch(() => navigate('/'))
   }, [navigate])
@@ -38,16 +39,13 @@ export default function ResultPage() {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="w-full max-w-lg">
-
         {/* Score card */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           className="bg-white rounded-2xl shadow-lg p-8 mb-6"
         >
-          <h1 className="text-2xl font-bold text-center text-gray-800 mb-8">
-            Quiz Results
-          </h1>
+          <h1 className="text-2xl font-bold text-center text-gray-800 mb-8">Quiz Results</h1>
 
           <div className="flex flex-col items-center mb-8">
             <ScoreRing score={result.score_percentage} />
@@ -78,9 +76,7 @@ export default function ResultPage() {
             >
               <span
                 className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                  ans.is_correct
-                    ? 'bg-green-100 text-green-700'
-                    : 'bg-red-100 text-red-600'
+                  ans.is_correct ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'
                 }`}
               >
                 {ans.is_correct ? '✓' : '✗'}
@@ -88,17 +84,11 @@ export default function ResultPage() {
               <div className="min-w-0">
                 <p className="font-semibold text-gray-800">{ans.word}</p>
                 {!ans.is_correct && (
-                  <p className="text-sm text-red-500 truncate">
-                    Your answer: {ans.user_answer}
-                  </p>
+                  <p className="text-sm text-red-500 truncate">Your answer: {ans.user_answer}</p>
                 )}
-                <p className="text-sm text-green-600 truncate">
-                  Correct: {ans.correct_answer}
-                </p>
+                <p className="text-sm text-green-600 truncate">Correct: {ans.correct_answer}</p>
                 {!ans.is_correct && ans.explanation && (
-                  <p className="text-sm text-gray-500 mt-1 italic">
-                    {ans.explanation}
-                  </p>
+                  <p className="text-sm text-gray-500 mt-1 italic">{ans.explanation}</p>
                 )}
               </div>
             </motion.div>

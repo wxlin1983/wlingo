@@ -24,10 +24,16 @@ export default function QuizPage() {
 
   // Load session once to get topic (for TTS language)
   useEffect(() => {
-    api.session().then(s => {
-      if (!s.active) { navigate('/'); return }
-      setTopic(s.topic ?? '')
-    }).catch(() => navigate('/'))
+    api
+      .session()
+      .then((s) => {
+        if (!s.active) {
+          navigate('/')
+          return
+        }
+        setTopic(s.topic ?? '')
+      })
+      .catch(() => navigate('/'))
   }, [navigate])
 
   // Load question whenever index changes
@@ -38,8 +44,9 @@ export default function QuizPage() {
     }
     setQuestion(null)
     setResult(null)
-    api.question(index)
-      .then(q => {
+    api
+      .question(index)
+      .then((q) => {
         setQuestion(q)
         if (q.answer_record) setResult(q.answer_record)
       })
@@ -57,18 +64,21 @@ export default function QuizPage() {
     window.speechSynthesis.speak(utt)
   }, [question, topic])
 
-  const handleSubmit = useCallback(async (optionIndex: number) => {
-    if (!question || result || submitting) return
-    setSubmitting(true)
-    try {
-      const r = await api.submit(optionIndex, index)
-      setResult(r)
-    } catch {
-      // ignore
-    } finally {
-      setSubmitting(false)
-    }
-  }, [question, result, submitting, index])
+  const handleSubmit = useCallback(
+    async (optionIndex: number) => {
+      if (!question || result || submitting) return
+      setSubmitting(true)
+      try {
+        const r = await api.submit(optionIndex, index)
+        setResult(r)
+      } catch {
+        // ignore
+      } finally {
+        setSubmitting(false)
+      }
+    },
+    [question, result, submitting, index],
+  )
 
   const goNext = useCallback(() => {
     if (!question) return
@@ -77,13 +87,16 @@ export default function QuizPage() {
   }, [question, index, navigate])
 
   const cancel = useCallback(() => {
-    api.reset().catch(() => {}).finally(() => navigate('/'))
+    api
+      .reset()
+      .catch(() => {})
+      .finally(() => navigate('/'))
   }, [navigate])
 
   // Keyboard shortcuts
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (['1','2','3','4'].includes(e.key) && !result && question) {
+      if (['1', '2', '3', '4'].includes(e.key) && !result && question) {
         const i = parseInt(e.key) - 1
         if (i < question.options.length) handleSubmit(i)
       }
@@ -117,11 +130,12 @@ export default function QuizPage() {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="w-full max-w-lg">
-
         {/* Progress bar */}
         <div className="mb-5">
           <div className="flex justify-between text-sm text-gray-400 mb-1.5">
-            <span>Question {index + 1} / {question.total_questions}</span>
+            <span>
+              Question {index + 1} / {question.total_questions}
+            </span>
             <span>{Math.round((answered / question.total_questions) * 100)}%</span>
           </div>
           <ProgressBar current={answered} total={question.total_questions} />
@@ -129,12 +143,9 @@ export default function QuizPage() {
 
         {/* Card */}
         <div className="bg-white rounded-2xl shadow-lg p-8">
-
           {/* Word + Listen */}
           <div className="text-center mb-8">
-            <p className="text-4xl font-bold text-gray-800 mb-4 leading-tight">
-              {question.word}
-            </p>
+            <p className="text-4xl font-bold text-gray-800 mb-4 leading-tight">{question.word}</p>
             <button
               onClick={speak}
               className={`inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border transition-colors ${
@@ -171,9 +182,7 @@ export default function QuizPage() {
                   result.is_correct ? 'text-green-600' : 'text-red-600'
                 }`}
               >
-                {result.is_correct
-                  ? '✓ Correct!'
-                  : `✗ The answer is "${result.correct_answer}"`}
+                {result.is_correct ? '✓ Correct!' : `✗ The answer is "${result.correct_answer}"`}
               </motion.p>
             )}
           </AnimatePresence>
@@ -205,8 +214,8 @@ export default function QuizPage() {
 
         {/* Keyboard hint */}
         <p className="text-center text-xs text-gray-400 mt-4">
-          <strong>1–4</strong> select · <strong>Enter</strong> next ·{' '}
-          <strong>S</strong> listen · <strong>Esc</strong> cancel
+          <strong>1–4</strong> select · <strong>Enter</strong> next · <strong>S</strong> listen ·{' '}
+          <strong>Esc</strong> cancel
         </p>
       </div>
     </div>

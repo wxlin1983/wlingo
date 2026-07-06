@@ -18,8 +18,8 @@ uv run pytest tests/ -v
 uv run pytest tests/test_api.py::test_home_page_returns_200 -v
 
 # Lint / format
-uv run ruff check src/
-uv run ruff format src/
+uv run ruff check src/ tests/ scripts/
+uv run ruff format src/ tests/ scripts/
 
 # Run locally (requires a running Redis instance)
 cd src && uvicorn wlingo.main:app --host 0.0.0.0 --port 8002 --reload
@@ -34,9 +34,19 @@ cd frontend && npm install && npm run dev   # → http://localhost:5173
 cd frontend && npm run build
 # Copy built files to where FastAPI serves them:
 cp -r frontend/dist/* src/static/
+
+# Frontend lint / format / typecheck / test
+cd frontend
+npm run lint          # eslint
+npm run format        # prettier --write
+npm run format:check  # prettier --check
+npm run typecheck     # tsc --noEmit
+npm run test          # vitest run
 ```
 
 App is available at **http://localhost:8002**. Vite dev server at **http://localhost:5173**. Interactive API docs at **/docs**.
+
+**CI** — `.github/workflows/ci.yml` runs the backend (ruff check/format, pytest) and frontend (eslint, prettier --check, tsc, vitest, vite build) jobs on every push/PR to `main`. The Docker build also gates on both: the `frontend-build` stage runs `npm run lint && npm run test` before `npm run build`, and the `test` stage runs `pytest` before the production image is built — a failure in either stops the build.
 
 ### Frontend
 

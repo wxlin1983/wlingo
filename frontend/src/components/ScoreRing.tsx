@@ -10,7 +10,7 @@ const circumference = 2 * Math.PI * r // ≈ 339.3
 function ringColor(score: number) {
   if (score >= 80) return '#22c55e' // green-500
   if (score >= 50) return '#f59e0b' // amber-500
-  return '#ef4444'                   // red-500
+  return '#ef4444' // red-500
 }
 
 export default function ScoreRing({ score }: Props) {
