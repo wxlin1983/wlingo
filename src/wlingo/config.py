@@ -18,6 +18,8 @@ class Settings:
     USER_COOKIE_NAME: str = "wlingo_user_id"
     USER_STATS_TTL_DAYS: int = 90
     ROOT_PATH: str = os.environ.get("ROOT_PATH", "")
+    ADMIN_TOKEN: str = os.environ.get("ADMIN_TOKEN", "")
+    COOKIE_SECURE: bool = os.environ.get("COOKIE_SECURE", "false").lower() == "true"
 
 
 settings = Settings()

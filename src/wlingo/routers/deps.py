@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 
 from fastapi import Cookie, Depends
+from pydantic import ValidationError
 
 from ..config import settings
 from ..models import SessionData
@@ -32,9 +33,17 @@ def get_active_session(
     raw = redis.get(session_id)
     if not raw:
         return None
-    session = SessionData.model_validate_json(raw)
+    try:
+        session = SessionData.model_validate_json(raw)
+    except ValidationError:
+        # Corrupt/incompatible payload (e.g. after a model change) — drop it
+        # rather than 500ing, and treat it as if there's no active session.
+        redis.delete(session_id)
+        return None
     # Belt-and-suspenders alongside the Redis TTL; cleans up stale data on access
-    if datetime.now() - session.created_at > timedelta(minutes=settings.SESSION_TIMEOUT_MINUTES):
+    if datetime.now() - session.created_at > timedelta(
+        minutes=settings.SESSION_TIMEOUT_MINUTES
+    ):
         redis.delete(session_id)
         return None
     return session

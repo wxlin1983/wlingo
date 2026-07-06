@@ -36,5 +36,5 @@ export const api = {
       }),
     }),
 
-  reset: () => fetch(BASE + '/api/reset', { method: 'POST' }),
+  reset: () => json<{ status: string }>('/api/reset', { method: 'POST' }),
 }

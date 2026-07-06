@@ -20,6 +20,8 @@ export default function ResultPage() {
     setResetting(true)
     try {
       await api.reset()
+    } catch {
+      // best-effort: the session will also expire via its own TTL
     } finally {
       navigate('/')
     }

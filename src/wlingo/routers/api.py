@@ -3,8 +3,9 @@ import logging
 import uuid
 from datetime import datetime, timedelta
 
-from fastapi import APIRouter, Depends, Form, HTTPException, Response
+from fastapi import APIRouter, Depends, Form, Header, HTTPException, Response
 from fastapi.responses import JSONResponse, RedirectResponse
+from redis.exceptions import RedisError, WatchError
 
 from ..config import settings
 from ..globals import vocab_manager
@@ -20,6 +21,15 @@ VALID_MODES = {"adaptive", "random"}
 
 def _user_stats_key(user_id: str, topic: str) -> str:
     return f"user_stats:{user_id}:{topic}"
+
+
+@router.get("/api/health")
+def health_check(redis=Depends(get_redis)):
+    try:
+        redis.ping()
+    except RedisError:
+        return JSONResponse({"status": "unavailable"}, status_code=503)
+    return {"status": "ok"}
 
 
 @router.get("/api/topics")
@@ -61,9 +71,14 @@ def start_quiz_session(
     if mode == "adaptive" and user_id:
         raw = redis.get(_user_stats_key(user_id, topic))
         if raw:
-            word_weights = json.loads(raw)
+            try:
+                word_weights = json.loads(raw)
+            except json.JSONDecodeError:
+                word_weights = {}
 
-    prepared_questions = generator.generate(topic, settings.TEST_SIZE, word_weights=word_weights)
+    prepared_questions = generator.generate(
+        topic, settings.TEST_SIZE, word_weights=word_weights
+    )
 
     new_id = str(uuid.uuid4())
     session_data = SessionData(
@@ -88,6 +103,7 @@ def start_quiz_session(
         value=new_id,
         httponly=True,
         samesite="Lax",
+        secure=settings.COOKIE_SECURE,
     )
     return redirect
 
@@ -125,8 +141,10 @@ def submit_answer(
 ):
     if not session_data or not (0 <= current_index < session_data.total_questions):
         return JSONResponse({"error": "Invalid session"}, status_code=401)
-    if current_index < len(session_data.answers):
-        return JSONResponse({"error": "Already answered"}, status_code=400)
+    if current_index != len(session_data.answers):
+        return JSONResponse(
+            {"error": "Answers must be submitted in order"}, status_code=400
+        )
 
     current_q = session_data.prepared_questions[current_index]
     if not (0 <= selected_option_index < len(current_q.options)):
@@ -154,26 +172,46 @@ def submit_answer(
 
     # Track wrong answers for adaptive mode; "standard" treated as alias for backward compat
     if session_data.mode in ("adaptive", "standard") and user_id:
-        _update_user_stats(redis, user_id, session_data.topic, current_q.word, is_correct)
+        _update_user_stats(
+            redis, user_id, session_data.topic, current_q.word, is_correct
+        )
 
     return record
 
 
-def _update_user_stats(redis, user_id: str, topic: str, word: str, is_correct: bool) -> None:
+def _update_user_stats(
+    redis, user_id: str, topic: str, word: str, is_correct: bool
+) -> None:
     key = _user_stats_key(user_id, topic)
-    raw = redis.get(key)
-    stats: dict[str, int] = json.loads(raw) if raw else {}
+    with redis.pipeline() as pipe:
+        while True:
+            try:
+                pipe.watch(key)
+                raw = pipe.get(key)
+                try:
+                    stats: dict[str, int] = json.loads(raw) if raw else {}
+                except json.JSONDecodeError:
+                    stats = {}
 
-    if is_correct:
-        stats.pop(word, None)
-    else:
-        stats[word] = stats.get(word, 0) + 1
+                if is_correct:
+                    stats.pop(word, None)
+                else:
+                    stats[word] = stats.get(word, 0) + 1
 
-    if stats:
-        redis.set(key, json.dumps(stats), ex=timedelta(days=settings.USER_STATS_TTL_DAYS))
-    else:
-        # Avoid persisting empty dicts when all words are mastered
-        redis.delete(key)
+                pipe.multi()
+                if stats:
+                    pipe.set(
+                        key,
+                        json.dumps(stats),
+                        ex=timedelta(days=settings.USER_STATS_TTL_DAYS),
+                    )
+                else:
+                    # Avoid persisting empty dicts when all words are mastered
+                    pipe.delete(key)
+                pipe.execute()
+                break
+            except WatchError:
+                continue
 
 
 @router.get("/api/result")
@@ -203,7 +241,9 @@ def reset_session(
 
 
 @router.post("/api/admin/reload-vocab")
-def reload_vocab():
+def reload_vocab(x_admin_token: str | None = Header(default=None)):
+    if not settings.ADMIN_TOKEN or x_admin_token != settings.ADMIN_TOKEN:
+        raise HTTPException(status_code=403, detail="Forbidden")
     vocab_manager.load_all()
     topics = vocab_manager.get_topics()
     return {"loaded": len(topics), "topics": [t["id"] for t in topics]}

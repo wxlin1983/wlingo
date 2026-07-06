@@ -32,6 +32,10 @@ export default function QuizPage() {
 
   // Load question whenever index changes
   useEffect(() => {
+    if (!Number.isInteger(index) || index < 0) {
+      navigate('/')
+      return
+    }
     setQuestion(null)
     setResult(null)
     api.question(index)
@@ -73,7 +77,7 @@ export default function QuizPage() {
   }, [question, index, navigate])
 
   const cancel = useCallback(() => {
-    api.reset().finally(() => navigate('/'))
+    api.reset().catch(() => {}).finally(() => navigate('/'))
   }, [navigate])
 
   // Keyboard shortcuts

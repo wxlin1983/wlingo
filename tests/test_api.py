@@ -14,6 +14,7 @@ from fastapi.testclient import TestClient
 from wlingo.app import create_app
 from wlingo.config import settings
 from wlingo.models import Question, SessionData
+from wlingo.routers.api import _update_user_stats
 from wlingo.routers.deps import get_redis
 
 
@@ -34,7 +35,9 @@ def client():
 
 def _start(client, topic="English", mode="adaptive"):
     """Helper: start a quiz session and return the response."""
-    return client.post("/start", data={"topic": topic, "mode": mode}, follow_redirects=False)
+    return client.post(
+        "/start", data={"topic": topic, "mode": mode}, follow_redirects=False
+    )
 
 
 def _session(fake_redis, client) -> dict:
@@ -42,6 +45,31 @@ def _session(fake_redis, client) -> dict:
     session_id = client.cookies.get(settings.SESSION_COOKIE_NAME)
     raw = fake_redis.get(session_id)
     return json.loads(raw)
+
+
+# ---------------------------------------------------------------------------
+# Health check
+# ---------------------------------------------------------------------------
+
+
+def test_health_check_returns_ok_when_redis_up(client):
+    c, _ = client
+    resp = c.get("/api/health")
+    assert resp.status_code == 200
+    assert resp.json()["status"] == "ok"
+
+
+def test_health_check_returns_503_when_redis_down(client, monkeypatch):
+    c, fake_redis = client
+
+    def broken_ping():
+        from redis.exceptions import ConnectionError as RedisConnectionError
+
+        raise RedisConnectionError("simulated outage")
+
+    monkeypatch.setattr(fake_redis, "ping", broken_ping)
+    resp = c.get("/api/health")
+    assert resp.status_code == 503
 
 
 # ---------------------------------------------------------------------------
@@ -99,6 +127,16 @@ def test_start_sets_session_cookie(client):
     c, _ = client
     resp = _start(c, "English")
     assert "quiz_session_id" in resp.cookies or "Set-Cookie" in resp.headers
+
+
+def test_session_and_user_cookies_share_the_same_attributes(client):
+    c, _ = client
+    session_cookie = _start(c, "English").headers.get_list("set-cookie")[0]
+    user_cookie = c.get("/", follow_redirects=False).headers.get_list("set-cookie")[0]
+
+    for attr in ("HttpOnly", "SameSite=Lax"):
+        assert attr in session_cookie
+        assert attr in user_cookie
 
 
 def test_start_adaptive_mode_stored_in_session(client):
@@ -248,6 +286,33 @@ def test_submit_answer_twice_returns_400(client):
     assert resp.status_code == 400
 
 
+def test_submit_answer_out_of_order_returns_400(client):
+    c, fake_redis = client
+    _start(c)
+    # Skip ahead to index 1 before answering index 0.
+    resp = c.post(
+        "/submit_answer", data={"selected_option_index": 0, "current_index": 1}
+    )
+    assert resp.status_code == 400
+    # The answers list must stay untouched, not corrupted with a
+    # misplaced record.
+    session = _session(fake_redis, c)
+    assert session["answers"] == []
+
+
+def test_submit_answer_skipping_ahead_after_first_answer_returns_400(client):
+    c, fake_redis = client
+    _start(c)
+    c.post("/submit_answer", data={"selected_option_index": 0, "current_index": 0})
+    # Now try to answer index 2, skipping index 1.
+    resp = c.post(
+        "/submit_answer", data={"selected_option_index": 0, "current_index": 2}
+    )
+    assert resp.status_code == 400
+    session = _session(fake_redis, c)
+    assert len(session["answers"]) == 1
+
+
 def test_submit_invalid_option_index_returns_400(client):
     c, _ = client
     _start(c)
@@ -338,6 +403,34 @@ def test_home_does_not_reset_existing_user_id(client):
     first_id = c.cookies.get("wlingo_user_id")
     c.get("/")  # second visit should not change it
     assert c.cookies.get("wlingo_user_id") == first_id
+
+
+def test_update_user_stats_survives_concurrent_write(monkeypatch):
+    """A concurrent writer touching the stats key between our read and our
+    write must not be silently clobbered (the pre-fix GET->mutate->SET
+    pattern would have lost this update)."""
+    fake_redis = fakeredis.FakeRedis(decode_responses=True)
+    key = "user_stats:user1:English"
+    pipe = fake_redis.pipeline()
+    original_multi = pipe.multi
+    calls = {"n": 0}
+
+    def flaky_multi(*args, **kwargs):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            # Simulate another request writing to this key right after our
+            # WATCH/GET but before our MULTI/EXEC.
+            fake_redis.set(key, json.dumps({"interloper": 1}))
+        return original_multi(*args, **kwargs)
+
+    monkeypatch.setattr(pipe, "multi", flaky_multi)
+    monkeypatch.setattr(fake_redis, "pipeline", lambda **kw: pipe)
+
+    _update_user_stats(fake_redis, "user1", "English", "hola", is_correct=False)
+
+    assert calls["n"] == 2, "expected exactly one retry after the WatchError"
+    stats = json.loads(fake_redis.get(key))
+    assert stats == {"interloper": 1, "hola": 1}
 
 
 def test_wrong_answer_creates_user_stats(client):
@@ -521,6 +614,47 @@ def test_expired_session_is_deleted_from_redis(client):
 
 
 # ---------------------------------------------------------------------------
+# Malformed Redis payloads
+# ---------------------------------------------------------------------------
+
+
+def test_corrupt_session_payload_treated_as_no_session(client):
+    c, fake_redis = client
+    session_id = str(uuid.uuid4())
+    fake_redis.set(session_id, "not valid json at all")
+    c.cookies.set(settings.SESSION_COOKIE_NAME, session_id)
+
+    resp = c.get("/api/session")
+    assert resp.status_code == 200
+    assert resp.json()["active"] is False
+
+
+def test_corrupt_session_payload_is_deleted_from_redis(client):
+    c, fake_redis = client
+    session_id = str(uuid.uuid4())
+    fake_redis.set(session_id, "not valid json at all")
+    c.cookies.set(settings.SESSION_COOKIE_NAME, session_id)
+
+    c.get("/api/session")
+
+    assert not fake_redis.exists(session_id)
+
+
+def test_corrupt_user_stats_treated_as_empty(client):
+    c, fake_redis = client
+    user_id = str(uuid.uuid4())
+    c.cookies.set(settings.USER_COOKIE_NAME, user_id)
+    fake_redis.set(f"user_stats:{user_id}:English", "{not json")
+
+    # Starting an adaptive-mode session reads word_weights from the corrupt
+    # key; it should fall back to no weighting instead of 500ing.
+    resp = c.post(
+        "/start", data={"topic": "English", "mode": "adaptive"}, follow_redirects=False
+    )
+    assert resp.status_code == 302
+
+
+# ---------------------------------------------------------------------------
 # Input sanitization on /start
 # ---------------------------------------------------------------------------
 
@@ -586,9 +720,33 @@ def test_session_api_completed_when_all_answered(client):
 # ---------------------------------------------------------------------------
 
 
-def test_reload_vocab_returns_topics(client):
+def test_reload_vocab_without_token_returns_403(client, monkeypatch):
+    monkeypatch.setattr(settings, "ADMIN_TOKEN", "s3cret")
     c, _ = client
     resp = c.post("/api/admin/reload-vocab")
+    assert resp.status_code == 403
+
+
+def test_reload_vocab_with_wrong_token_returns_403(client, monkeypatch):
+    monkeypatch.setattr(settings, "ADMIN_TOKEN", "s3cret")
+    c, _ = client
+    resp = c.post("/api/admin/reload-vocab", headers={"X-Admin-Token": "wrong"})
+    assert resp.status_code == 403
+
+
+def test_reload_vocab_when_unconfigured_returns_403(client, monkeypatch):
+    # No ADMIN_TOKEN set at all -> the endpoint must deny everyone, not
+    # fail open.
+    monkeypatch.setattr(settings, "ADMIN_TOKEN", "")
+    c, _ = client
+    resp = c.post("/api/admin/reload-vocab", headers={"X-Admin-Token": ""})
+    assert resp.status_code == 403
+
+
+def test_reload_vocab_with_correct_token_returns_topics(client, monkeypatch):
+    monkeypatch.setattr(settings, "ADMIN_TOKEN", "s3cret")
+    c, _ = client
+    resp = c.post("/api/admin/reload-vocab", headers={"X-Admin-Token": "s3cret"})
     assert resp.status_code == 200
     data = resp.json()
     assert "loaded" in data
