@@ -1,6 +1,4 @@
-import pytest
-
-from wlingo.quiz import QuizFactory, RandomQuizGenerator
+from wlingo.quiz import RandomQuizGenerator
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -110,22 +108,3 @@ class TestRandomQuizGenerator:
         result = self.gen._weighted_sample(SAMPLE_WORDS, weights, 10)
         words = [r["word"] for r in result]
         assert len(words) == len(set(words))
-
-
-# ---------------------------------------------------------------------------
-# QuizFactory
-# ---------------------------------------------------------------------------
-
-
-class TestQuizFactory:
-    def test_creates_random_generator(self):
-        gen = QuizFactory.create("standard", MockVocabManager())
-        assert isinstance(gen, RandomQuizGenerator)
-
-    def test_without_vocab_manager_raises(self):
-        with pytest.raises(ValueError):
-            QuizFactory.create("standard")
-
-    def test_unknown_mode_raises(self):
-        with pytest.raises(ValueError, match="Unknown quiz mode"):
-            QuizFactory.create("unknown_mode", MockVocabManager())

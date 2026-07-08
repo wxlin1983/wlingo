@@ -2,8 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import StartPage from './pages/StartPage'
 import QuizPage from './pages/QuizPage'
 import ResultPage from './pages/ResultPage'
-
-const ROOT_PATH = import.meta.env.VITE_ROOT_PATH || ''
+import { ROOT_PATH } from './lib/env'
 
 export default function App() {
   return (

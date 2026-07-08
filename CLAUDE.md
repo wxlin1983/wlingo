@@ -67,7 +67,7 @@ Pages:
 
 ### Key structural details
 
-**Working directory is `src/`** — the app uses relative paths for templates, static files, and vocabulary CSVs. `uvicorn` must be launched from inside `src/`. Tests handle this via `conftest.py` which calls `os.chdir(SRC_DIR)` at module level before any wlingo imports.
+**Working directory is `src/`** — the app uses relative paths for static files and vocabulary CSVs. `uvicorn` must be launched from inside `src/`. Tests handle this via `conftest.py` which calls `os.chdir(SRC_DIR)` at module level before any wlingo imports.
 
 **App factory** — `app.py:create_app()` constructs the FastAPI instance. Tests import this directly and override the Redis dependency before using it, keeping test setup clean.
 
@@ -106,9 +106,8 @@ Session data is also soft-expired on read in `get_active_session()` (belt-and-su
 
 - `"adaptive"` — weighted sampling biased toward previously missed words (default)
 - `"random"` — pure random shuffle, ignores user history
-- `"standard"` — legacy alias for `"adaptive"`
 
-Only `"adaptive"` mode writes/reads `user_stats` keys. To add a new mode, subclass `QuizGenerator` in `quiz.py` and register it in `QuizFactory.create`.
+`QuizFactory.VALID_MODES` (`quiz.py`) is the single source of truth for valid modes — routers import and check against it rather than keeping a second copy. Only `"adaptive"` mode writes/reads `user_stats` keys. To add a new mode, subclass `QuizGenerator` in `quiz.py`, register it in `QuizFactory.create`, and add it to `VALID_MODES`.
 
 Adaptive weighting: wrong answers increment a counter in `user_stats`. On `/start`, these weights are fetched and passed to `generator.generate()`, which uses `_weighted_sample` to bias question selection toward previously missed words (boost capped at 3× to prevent domination).
 
@@ -118,7 +117,7 @@ Adaptive weighting: wrong answers increment a counter in `user_stats`. On `/star
 
 ### Vocabulary topics
 
-`VocabularyManager` scans `src/vocabulary/*.csv` at startup. Each CSV must have `word` and `translation` columns. The filename (without extension) becomes the topic ID. `POST /api/admin/reload-vocab` triggers a hot reload without restarting the server.
+`VocabularyManager` scans `src/vocabulary/*.csv` at startup. Each CSV must have `word` and `translation` columns; an optional `explanation` column is shown on wrong answers (see `scripts/generate_explanations.py` to backfill it via the Claude API). The filename (without extension) becomes the topic ID. `POST /api/admin/reload-vocab` triggers a hot reload without restarting the server — it requires an `X-Admin-Token` header matching `settings.ADMIN_TOKEN` (unset by default, which denies all requests).
 
 ### Testing
 

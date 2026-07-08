@@ -4,6 +4,8 @@ import { api } from '../lib/api'
 import type { Topic, SessionInfo } from '../lib/types'
 import ModeToggle from '../components/ModeToggle'
 import ResumeCard from '../components/ResumeCard'
+import PageShell from '../components/PageShell'
+import PrimaryButton from '../components/PrimaryButton'
 
 export default function StartPage() {
   const [topics, setTopics] = useState<Topic[]>([])
@@ -54,7 +56,7 @@ export default function StartPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+    <PageShell>
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
@@ -93,15 +95,11 @@ export default function StartPage() {
           <ModeToggle value={mode} onChange={setMode} />
 
           {/* Start button */}
-          <button
-            onClick={handleStart}
-            disabled={topics.length === 0 || loading}
-            className="w-full py-4 bg-green-500 hover:bg-green-600 active:scale-[0.98] active:translate-y-0.5 text-white font-bold text-xl rounded-2xl shadow-[0_4px_0_#16a34a] active:shadow-none disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-100"
-          >
+          <PrimaryButton onClick={handleStart} disabled={topics.length === 0 || loading}>
             {loading ? 'Starting…' : 'Start Quiz ▶'}
-          </button>
+          </PrimaryButton>
         </div>
       </div>
-    </div>
+    </PageShell>
   )
 }

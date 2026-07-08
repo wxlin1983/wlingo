@@ -5,6 +5,8 @@ import { api } from '../lib/api'
 import type { Question, AnswerRecord } from '../lib/types'
 import ProgressBar from '../components/ProgressBar'
 import OptionButton, { type OptionState } from '../components/OptionButton'
+import PageShell from '../components/PageShell'
+import Spinner from '../components/Spinner'
 
 const LANG_MAP: Record<string, string> = {
   English: 'en-US',
@@ -119,16 +121,16 @@ export default function QuizPage() {
 
   if (!question) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-sky-500 border-t-transparent rounded-full animate-spin" />
-      </div>
+      <PageShell>
+        <Spinner />
+      </PageShell>
     )
   }
 
   const answered = result ? index + 1 : index
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+    <PageShell>
       <div className="w-full max-w-lg">
         {/* Progress bar */}
         <div className="mb-5">
@@ -218,6 +220,6 @@ export default function QuizPage() {
           <strong>Esc</strong> cancel
         </p>
       </div>
-    </div>
+    </PageShell>
   )
 }

@@ -110,7 +110,7 @@ def test_home_page_returns_200(client):
 # ---------------------------------------------------------------------------
 
 
-def test_start_standard_quiz_redirects(client):
+def test_start_quiz_redirects(client):
     c, fake_redis = client
     resp = _start(c, "English")
     assert resp.status_code == 302

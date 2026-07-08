@@ -18,10 +18,6 @@ httptools==0.7.1
     # via uvicorn
 idna==3.10
     # via anyio
-jinja2==3.1.6
-    # via wlingo (pyproject.toml)
-markupsafe==3.0.3
-    # via jinja2
 numpy==2.2.4
     # via pandas
 pandas==2.3.3
@@ -48,9 +44,11 @@ starlette==0.50.0
     # via fastapi
 typing-extensions==4.15.0
     # via
+    #   anyio
     #   fastapi
     #   pydantic
     #   pydantic-core
+    #   starlette
     #   typing-inspection
 typing-inspection==0.4.2
     # via pydantic

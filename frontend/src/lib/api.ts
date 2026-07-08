@@ -1,6 +1,5 @@
 import type { Topic, Question, AnswerRecord, SessionInfo, QuizResult } from './types'
-
-const BASE = import.meta.env.VITE_ROOT_PATH || ''
+import { ROOT_PATH as BASE } from './env'
 
 async function json<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(BASE + path, init)

@@ -5,18 +5,17 @@ from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, Form, Header, HTTPException, Response
 from fastapi.responses import JSONResponse, RedirectResponse
+from redis import Redis
 from redis.exceptions import RedisError, WatchError
 
 from ..config import settings
 from ..globals import vocab_manager
 from ..models import AnswerRecord, SessionData
-from ..quiz import QuizFactory
+from ..quiz import VALID_MODES, RandomQuizGenerator
 from .deps import get_active_session, get_redis, get_session_id, get_user_id
 
 router = APIRouter()
 logger = logging.getLogger("wlingo")
-
-VALID_MODES = {"adaptive", "random"}
 
 
 def _user_stats_key(user_id: str, topic: str) -> str:
@@ -24,7 +23,7 @@ def _user_stats_key(user_id: str, topic: str) -> str:
 
 
 @router.get("/api/health")
-def health_check(redis=Depends(get_redis)):
+def health_check(redis: Redis = Depends(get_redis)):
     try:
         redis.ping()
     except RedisError:
@@ -58,14 +57,14 @@ def start_quiz_session(
     topic: str = Form(...),
     mode: str = Form("adaptive"),
     user_id: str | None = Depends(get_user_id),
-    redis=Depends(get_redis),
+    redis: Redis = Depends(get_redis),
 ):
     topic = topic.strip()[:100]
     if not vocab_manager.get_words(topic):
         raise HTTPException(status_code=400, detail=f"Unknown topic: {topic!r}")
     mode = mode if mode in VALID_MODES else "adaptive"
 
-    generator = QuizFactory.create(mode, vocab_manager)
+    generator = RandomQuizGenerator(vocab_manager)
 
     word_weights: dict[str, int] = {}
     if mode == "adaptive" and user_id:
@@ -138,7 +137,7 @@ def submit_answer(
     session_id: str | None = Depends(get_session_id),
     session_data: SessionData | None = Depends(get_active_session),
     user_id: str | None = Depends(get_user_id),
-    redis=Depends(get_redis),
+    redis: Redis = Depends(get_redis),
 ):
     if not session_data or not (0 <= current_index < session_data.total_questions):
         return JSONResponse({"error": "Invalid session"}, status_code=401)
@@ -171,9 +170,8 @@ def submit_answer(
         ex=timedelta(minutes=settings.SESSION_TIMEOUT_MINUTES),
     )
 
-    # Track wrong answers for adaptive mode; "standard" treated as alias
-    # for backward compat
-    if session_data.mode in ("adaptive", "standard") and user_id:
+    # Track wrong answers for adaptive mode only
+    if session_data.mode == "adaptive" and user_id:
         _update_user_stats(
             redis, user_id, session_data.topic, current_q.word, is_correct
         )
@@ -182,7 +180,7 @@ def submit_answer(
 
 
 def _update_user_stats(
-    redis, user_id: str, topic: str, word: str, is_correct: bool
+    redis: Redis, user_id: str, topic: str, word: str, is_correct: bool
 ) -> None:
     key = _user_stats_key(user_id, topic)
     with redis.pipeline() as pipe:
@@ -234,7 +232,7 @@ def get_result_data(session_data: SessionData | None = Depends(get_active_sessio
 def reset_session(
     response: Response,
     session_id: str | None = Depends(get_session_id),
-    redis=Depends(get_redis),
+    redis: Redis = Depends(get_redis),
 ):
     if session_id:
         redis.delete(session_id)

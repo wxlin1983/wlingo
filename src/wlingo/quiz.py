@@ -1,26 +1,13 @@
 import random
-from abc import ABC, abstractmethod
 
 from .models import Question, Word
 from .vocabulary import VocabularyManager
 
-
-# --- Strategy Pattern: Quiz Generators ---
-class QuizGenerator(ABC):
-    """Abstract Base Class for different quiz generation strategies."""
-
-    @abstractmethod
-    def generate(
-        self,
-        topic: str,
-        count: int,
-        word_weights: dict[str, int] | None = None,
-    ) -> list[Question]:
-        pass
+VALID_MODES = {"adaptive", "random"}
 
 
-class RandomQuizGenerator(QuizGenerator):
-    """Standard mode: Randomly selects N words from the topic."""
+class RandomQuizGenerator:
+    """Generates quiz questions by sampling words from a topic's vocabulary."""
 
     def __init__(self, vocab_manager: VocabularyManager):
         self.vocab_manager = vocab_manager
@@ -101,20 +88,3 @@ class RandomQuizGenerator(QuizGenerator):
         options = [correct_translation] + incorrect
         random.shuffle(options)
         return options
-
-
-class QuizFactory:
-    """Factory to select the appropriate generator."""
-
-    # "standard" is a legacy alias for "adaptive"
-    VALID_MODES = {"adaptive", "random", "standard"}
-
-    @staticmethod
-    def create(
-        mode: str, vocab_manager: VocabularyManager | None = None
-    ) -> QuizGenerator:
-        if not vocab_manager:
-            raise ValueError("VocabularyManager is required")
-        if mode not in QuizFactory.VALID_MODES:
-            raise ValueError(f"Unknown quiz mode: {mode!r}")
-        return RandomQuizGenerator(vocab_manager)

@@ -88,18 +88,40 @@ gracias,thank you
 
 The topic appears automatically on the next application start.
 
+### Generating learner-note explanations
+
+Each CSV can have an optional third `explanation` column — a short, learner-facing note shown when a wrong answer is reviewed (see the "Learner notes" feature above). Writing these by hand doesn't scale, so `scripts/generate_explanations.py` fills them in by calling the Claude API in batches for any row with an empty `explanation`:
+
+```bash
+uv sync --extra scripts
+ANTHROPIC_API_KEY=... uv run python scripts/generate_explanations.py [--topic NAME] [--force] [--dry-run]
+```
+
+- Only rows with an empty `explanation` are processed, so it's safe to re-run after adding new words.
+- `--topic NAME` scopes the run to `src/vocabulary/NAME.csv`; omit it to process every CSV.
+- `--force` regenerates explanations that already exist; `--dry-run` prints what would be written without saving.
+- This is an offline maintenance script — the running app never calls an LLM itself.
+
 ## Configuration
 
 All settings are in [`src/wlingo/config.py`](src/wlingo/config.py):
 
 | Setting | Default | Description |
 |---|---|---|
-| `TEST_SIZE` | `15` | Number of questions per quiz |
-| `SESSION_TIMEOUT_MINUTES` | `120` | Redis session TTL |
+| `PROJECT_NAME` | `"wlingo"` | FastAPI app title (shown in `/docs`) |
+| `DEBUG` | `False` | FastAPI debug mode |
+| `LOG_DIR` / `LOG_FILE` | `"log"` / `"wlingo.log"` | Rotating log file location (5MB × 3 backups) |
 | `REDIS_URL` | `redis://localhost:6379/0` | Override via `REDIS_URL` env var |
-| `ROOT_PATH` | `""` | URL prefix for reverse-proxy deployments (e.g. `/wlingo`) — see [CLAUDE.md](CLAUDE.md#frontend) for the matching frontend build flag |
-| `STATIC_DIR` | `"static"` | Built frontend files (`frontend/dist`) served from here |
 | `VOCAB_DIR` | `"vocabulary"` | Vocabulary CSV directory |
+| `STATIC_DIR` | `"static"` | Built frontend files (`frontend/dist`) served from here |
+| `TEST_SIZE` | `15` | Number of questions per quiz |
+| `SESSION_COOKIE_NAME` | `"quiz_session_id"` | Cookie holding the active quiz session ID |
+| `SESSION_TIMEOUT_MINUTES` | `120` | Redis session TTL |
+| `USER_COOKIE_NAME` | `"wlingo_user_id"` | Persistent per-browser cookie used for adaptive-mode word weighting |
+| `USER_STATS_TTL_DAYS` | `90` | How long per-topic word-weight stats are kept |
+| `ROOT_PATH` | `""` | URL prefix for reverse-proxy deployments (e.g. `/wlingo`) — see [CLAUDE.md](CLAUDE.md#frontend) for the matching frontend build flag |
+| `ADMIN_TOKEN` | `""` (unconfigured = always denied) | Shared secret required in the `X-Admin-Token` header for `POST /api/admin/reload-vocab` |
+| `COOKIE_SECURE` | `False` | Set `COOKIE_SECURE=true` when serving over HTTPS to mark cookies `Secure` |
 
 ## API Endpoints
 

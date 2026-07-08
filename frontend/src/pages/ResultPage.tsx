@@ -4,6 +4,9 @@ import { motion } from 'framer-motion'
 import { api } from '../lib/api'
 import type { QuizResult } from '../lib/types'
 import ScoreRing from '../components/ScoreRing'
+import PageShell from '../components/PageShell'
+import Spinner from '../components/Spinner'
+import PrimaryButton from '../components/PrimaryButton'
 
 export default function ResultPage() {
   const [result, setResult] = useState<QuizResult | null>(null)
@@ -30,14 +33,14 @@ export default function ResultPage() {
 
   if (!result) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-sky-500 border-t-transparent rounded-full animate-spin" />
-      </div>
+      <PageShell>
+        <Spinner />
+      </PageShell>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+    <PageShell>
       <div className="w-full max-w-lg">
         {/* Score card */}
         <motion.div
@@ -54,13 +57,9 @@ export default function ResultPage() {
             </p>
           </div>
 
-          <button
-            onClick={handleReset}
-            disabled={resetting}
-            className="w-full py-4 bg-green-500 hover:bg-green-600 active:scale-[0.98] active:translate-y-0.5 text-white font-bold text-lg rounded-2xl shadow-[0_4px_0_#16a34a] active:shadow-none disabled:opacity-50 transition-all duration-100"
-          >
+          <PrimaryButton onClick={handleReset} disabled={resetting}>
             {resetting ? 'Resetting…' : 'Start New Quiz 🔄'}
-          </button>
+          </PrimaryButton>
         </motion.div>
 
         {/* Answer review */}
@@ -95,6 +94,6 @@ export default function ResultPage() {
           ))}
         </div>
       </div>
-    </div>
+    </PageShell>
   )
 }
