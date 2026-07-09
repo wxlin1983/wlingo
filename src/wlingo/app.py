@@ -33,7 +33,14 @@ def create_app() -> FastAPI:
         debug=settings.DEBUG,
         root_path=settings.ROOT_PATH,
     )
-    app.mount("/static", StaticFiles(directory=settings.STATIC_DIR), name="static")
+    # check_dir=False: static/ is Vite build output and absent in fresh
+    # checkouts (CI); requests just 404 until the frontend is built, matching
+    # the pages router's missing-index.html fallback.
+    app.mount(
+        "/static",
+        StaticFiles(directory=settings.STATIC_DIR, check_dir=False),
+        name="static",
+    )
     app.include_router(api_router)
     app.include_router(pages_router)
     return app
