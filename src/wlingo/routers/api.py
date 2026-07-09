@@ -47,6 +47,7 @@ def get_session_info(session_data: SessionData | None = Depends(get_active_sessi
         "completed": completed,
         "topic": session_data.topic,
         "mode": session_data.mode,
+        "quiz_type": session_data.quiz_type,
         "current_index": next_index,
         "total_questions": session_data.total_questions,
     }
@@ -88,6 +89,7 @@ def start_quiz_session(
         created_at=datetime.now(),
         topic=topic,
         mode=mode,
+        quiz_type=vocab_manager.get_quiz_type(topic),
     )
     redis.set(
         new_id,
@@ -124,6 +126,7 @@ def get_question_data(
     return {
         "word": current_q.word,
         "options": current_q.options,
+        "quiz_type": current_q.quiz_type,
         "current_index": index,
         "total_questions": session_data.total_questions,
         "answer_record": record,
@@ -132,7 +135,8 @@ def get_question_data(
 
 @router.post("/submit_answer", response_model=AnswerRecord)
 def submit_answer(
-    selected_option_index: int = Form(...),
+    selected_option_index: int | None = Form(None),
+    typed_answer: str | None = Form(None),
     current_index: int = Form(...),
     session_id: str | None = Depends(get_session_id),
     session_data: SessionData | None = Depends(get_active_session),
@@ -147,11 +151,19 @@ def submit_answer(
         )
 
     current_q = session_data.prepared_questions[current_index]
-    if not (0 <= selected_option_index < len(current_q.options)):
-        return JSONResponse({"error": "Invalid option"}, status_code=400)
 
-    user_answer_str = current_q.options[selected_option_index]
-    is_correct = user_answer_str == current_q.translation
+    if current_q.quiz_type == "spelling":
+        if typed_answer is None or selected_option_index is not None:
+            return JSONResponse({"error": "Invalid answer"}, status_code=400)
+        user_answer_str = typed_answer.strip()
+        is_correct = user_answer_str.lower() == current_q.translation.strip().lower()
+    else:
+        if selected_option_index is None or typed_answer is not None:
+            return JSONResponse({"error": "Invalid answer"}, status_code=400)
+        if not (0 <= selected_option_index < len(current_q.options)):
+            return JSONResponse({"error": "Invalid option"}, status_code=400)
+        user_answer_str = current_q.options[selected_option_index]
+        is_correct = user_answer_str == current_q.translation
 
     if is_correct:
         session_data.correct_count += 1

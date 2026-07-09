@@ -47,6 +47,48 @@ def test_nonexistent_directory_is_created(tmp_path):
 
 
 # ---------------------------------------------------------------------------
+# Spelling subdirectory / quiz_type
+# ---------------------------------------------------------------------------
+
+
+def test_top_level_csv_is_multiple_choice(tmp_path):
+    (tmp_path / "Fruits.csv").write_text("word,translation\napple,苹果\n")
+    vm = VocabularyManager(str(tmp_path))
+    assert vm.get_quiz_type("Fruits") == "multiple_choice"
+
+
+def test_spelling_subdirectory_csv_is_spelling_type(tmp_path):
+    spelling_dir = tmp_path / "spelling"
+    spelling_dir.mkdir()
+    (spelling_dir / "KanjiKana.csv").write_text("word,translation\n漢字,かんじ\n")
+    vm = VocabularyManager(str(tmp_path))
+    assert "KanjiKana" in vm.vocab_sets
+    assert vm.get_quiz_type("KanjiKana") == "spelling"
+
+
+def test_spelling_topic_appears_in_get_topics_with_quiz_type(tmp_path):
+    spelling_dir = tmp_path / "spelling"
+    spelling_dir.mkdir()
+    (spelling_dir / "KanjiKana.csv").write_text("word,translation\n漢字,かんじ\n")
+    vm = VocabularyManager(str(tmp_path))
+    topic = next(t for t in vm.get_topics() if t["id"] == "KanjiKana")
+    assert topic["quiz_type"] == "spelling"
+
+
+def test_missing_spelling_subdirectory_is_silently_skipped(tmp_path):
+    (tmp_path / "Fruits.csv").write_text("word,translation\napple,苹果\n")
+    # No "spelling" subdirectory exists at all.
+    vm = VocabularyManager(str(tmp_path))
+    assert "Fruits" in vm.vocab_sets
+    assert len(vm.vocab_sets) == 1
+
+
+def test_get_quiz_type_unknown_topic_defaults_to_multiple_choice(tmp_path):
+    vm = VocabularyManager(str(tmp_path))
+    assert vm.get_quiz_type("DoesNotExist") == "multiple_choice"
+
+
+# ---------------------------------------------------------------------------
 # get_words
 # ---------------------------------------------------------------------------
 

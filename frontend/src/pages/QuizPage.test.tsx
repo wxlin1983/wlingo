@@ -24,6 +24,16 @@ vi.mock('react-router-dom', async (importOriginal) => {
 const QUESTION: Question = {
   word: 'hello',
   options: ['你好', '再見', '謝謝', '對不起'],
+  quiz_type: 'multiple_choice',
+  current_index: 0,
+  total_questions: 5,
+  answer_record: null,
+}
+
+const SPELLING_QUESTION: Question = {
+  word: '你好',
+  options: [],
+  quiz_type: 'spelling',
   current_index: 0,
   total_questions: 5,
   answer_record: null,
@@ -62,7 +72,7 @@ describe('QuizPage', () => {
 
     await user.click(screen.getByRole('button', { name: /你好/ }))
 
-    expect(api.submit).toHaveBeenCalledWith(0, 0)
+    expect(api.submit).toHaveBeenCalledWith({ optionIndex: 0 }, 0)
     expect(await screen.findByText('✓ Correct!')).toBeInTheDocument()
   })
 
@@ -73,5 +83,58 @@ describe('QuizPage', () => {
       expect(navigateMock).toHaveBeenCalledWith('/')
     })
     expect(api.question).not.toHaveBeenCalled()
+  })
+})
+
+describe('QuizPage spelling mode', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(api.session).mockResolvedValue({ active: true, topic: 'Chinese_Spelling' })
+    vi.mocked(api.question).mockResolvedValue(SPELLING_QUESTION)
+  })
+
+  it('renders a text input instead of option buttons', async () => {
+    renderAtIndex('0')
+    expect(await screen.findByText('你好')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText(/type your answer/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^submit$/i })).toBeInTheDocument()
+  })
+
+  it('submits the typed answer and shows feedback', async () => {
+    const user = userEvent.setup()
+    vi.mocked(api.submit).mockResolvedValue({
+      word: '你好',
+      user_answer: 'hello',
+      correct_answer: 'hello',
+      is_correct: true,
+      explanation: '',
+    })
+
+    renderAtIndex('0')
+    await screen.findByText('你好')
+
+    const input = screen.getByPlaceholderText(/type your answer/i)
+    await user.type(input, 'hello{Enter}')
+
+    expect(api.submit).toHaveBeenCalledWith({ typedAnswer: 'hello' }, 0)
+    expect(await screen.findByText('✓ Correct!')).toBeInTheDocument()
+  })
+
+  it('does not trigger option-selection or TTS while typing digits/s', async () => {
+    const user = userEvent.setup()
+    const speakSpy = vi.fn()
+    vi.stubGlobal('speechSynthesis', { cancel: vi.fn(), speak: speakSpy })
+
+    renderAtIndex('0')
+    await screen.findByText('你好')
+
+    const input = screen.getByPlaceholderText(/type your answer/i)
+    await user.type(input, '1s2')
+
+    expect(input).toHaveValue('1s2')
+    expect(api.submit).not.toHaveBeenCalled()
+    expect(speakSpy).not.toHaveBeenCalled()
+
+    vi.unstubAllGlobals()
   })
 })

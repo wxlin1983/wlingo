@@ -26,14 +26,19 @@ export const api = {
     return fetch(BASE + '/start', { method: 'POST', body, redirect: 'manual' })
   },
 
-  submit: (selectedOptionIndex: number, currentIndex: number) =>
-    json<AnswerRecord>('/submit_answer', {
+  submit: (answer: { optionIndex?: number; typedAnswer?: string }, currentIndex: number) => {
+    const params: Record<string, string> = { current_index: String(currentIndex) }
+    if (answer.optionIndex !== undefined) {
+      params.selected_option_index = String(answer.optionIndex)
+    }
+    if (answer.typedAnswer !== undefined) {
+      params.typed_answer = answer.typedAnswer
+    }
+    return json<AnswerRecord>('/submit_answer', {
       method: 'POST',
-      body: new URLSearchParams({
-        selected_option_index: String(selectedOptionIndex),
-        current_index: String(currentIndex),
-      }),
-    }),
+      body: new URLSearchParams(params),
+    })
+  },
 
   reset: () => json<{ status: string }>('/api/reset', { method: 'POST' }),
 }

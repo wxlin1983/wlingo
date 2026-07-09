@@ -5,11 +5,19 @@ from wlingo.quiz import RandomQuizGenerator
 # ---------------------------------------------------------------------------
 
 SAMPLE_WORDS = [{"word": f"word{i}", "translation": f"trans{i}"} for i in range(20)]
+SPELLING_WORDS = [{"word": f"kanji{i}", "translation": f"kana{i}"} for i in range(20)]
 
 
 class MockVocabManager:
     def get_words(self, topic: str):
-        return SAMPLE_WORDS if topic == "test" else []
+        if topic == "test":
+            return SAMPLE_WORDS
+        if topic == "spelling_test":
+            return SPELLING_WORDS
+        return []
+
+    def get_quiz_type(self, topic: str) -> str:
+        return "spelling" if topic == "spelling_test" else "multiple_choice"
 
 
 # ---------------------------------------------------------------------------
@@ -49,6 +57,9 @@ class TestRandomQuizGenerator:
                     {"word": "b", "translation": "beta"},
                 ]
 
+            def get_quiz_type(self, topic):
+                return "multiple_choice"
+
         gen = RandomQuizGenerator(TinyVocab())
         assert len(gen.generate("test", 100)) == 2
 
@@ -58,6 +69,9 @@ class TestRandomQuizGenerator:
         class SingleWordVocab:
             def get_words(self, topic):
                 return [{"word": "hello", "translation": "你好"}]
+
+            def get_quiz_type(self, topic):
+                return "multiple_choice"
 
         gen = RandomQuizGenerator(SingleWordVocab())
         questions = gen.generate("test", 1)
@@ -108,3 +122,44 @@ class TestRandomQuizGenerator:
         result = self.gen._weighted_sample(SAMPLE_WORDS, weights, 10)
         words = [r["word"] for r in result]
         assert len(words) == len(set(words))
+
+
+# ---------------------------------------------------------------------------
+# Spelling-type topics
+# ---------------------------------------------------------------------------
+
+
+class TestSpellingQuizGeneration:
+    def setup_method(self):
+        self.gen = RandomQuizGenerator(MockVocabManager())
+
+    def test_spelling_questions_have_no_options(self):
+        for q in self.gen.generate("spelling_test", 10):
+            assert q.options == []
+
+    def test_spelling_questions_are_tagged_spelling(self):
+        for q in self.gen.generate("spelling_test", 10):
+            assert q.quiz_type == "spelling"
+
+    def test_multiple_choice_questions_are_tagged_multiple_choice(self):
+        for q in self.gen.generate("test", 10):
+            assert q.quiz_type == "multiple_choice"
+
+    def test_spelling_generates_requested_count(self):
+        assert len(self.gen.generate("spelling_test", 10)) == 10
+
+    def test_spelling_weighted_generate_prefers_boosted_words(self):
+        """Adaptive weighting boosts missed spelling words the same way it
+        boosts missed multiple-choice words."""
+        target = SPELLING_WORDS[0]["word"]
+        weights = {target: 3}
+
+        appearances = sum(
+            1
+            for _ in range(200)
+            if any(
+                q.word == target
+                for q in self.gen.generate("spelling_test", 5, word_weights=weights)
+            )
+        )
+        assert appearances > 70

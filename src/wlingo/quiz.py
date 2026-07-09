@@ -27,11 +27,25 @@ class RandomQuizGenerator:
         if not word_list:
             return []
 
+        quiz_type = self.vocab_manager.get_quiz_type(topic)
+
         count = min(count, len(word_list))
         if word_weights:
             selected_words = self._weighted_sample(word_list, word_weights, count)
         else:
             selected_words = random.sample(word_list, count)
+
+        if quiz_type == "spelling":
+            return [
+                Question(
+                    word=item["word"],
+                    translation=item["translation"],
+                    options=[],
+                    explanation=item.get("explanation", ""),
+                    quiz_type="spelling",
+                )
+                for item in selected_words
+            ]
 
         return [
             Question(
@@ -39,6 +53,7 @@ class RandomQuizGenerator:
                 translation=item["translation"],
                 options=self._generate_options(item["translation"], word_list),
                 explanation=item.get("explanation", ""),
+                quiz_type="multiple_choice",
             )
             for item in selected_words
         ]

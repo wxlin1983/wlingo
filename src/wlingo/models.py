@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import TypedDict
+from typing import Literal, TypedDict
 
 from pydantic import BaseModel
+
+QuizType = Literal["multiple_choice", "spelling"]
 
 
 class Word(TypedDict):
@@ -16,14 +18,16 @@ class Topic(TypedDict):
     id: str
     name: str
     count: int
+    quiz_type: str
 
 
 # --- Models ---
 class Question(BaseModel):
     word: str
     translation: str
-    options: list[str]
+    options: list[str] = []
     explanation: str = ""
+    quiz_type: str = "multiple_choice"
 
 
 class AnswerRecord(BaseModel):
@@ -42,3 +46,4 @@ class SessionData(BaseModel):
     created_at: datetime
     topic: str
     mode: str = "standard"
+    quiz_type: str = "multiple_choice"

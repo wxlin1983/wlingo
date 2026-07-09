@@ -59,6 +59,48 @@ describe('api', () => {
     expect(String(init?.body)).toBe('topic=English&mode=adaptive')
   })
 
+  it('submit() sends selected_option_index for a multiple-choice answer', async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      jsonResponse({
+        word: 'hello',
+        user_answer: '你好',
+        correct_answer: '你好',
+        is_correct: true,
+        explanation: '',
+      }),
+    )
+
+    await api.submit({ optionIndex: 2 }, 0)
+
+    const [url, init] = vi.mocked(fetch).mock.calls[0]
+    expect(url).toBe('/submit_answer')
+    expect(init?.method).toBe('POST')
+    const body = new URLSearchParams(String(init?.body))
+    expect(body.get('selected_option_index')).toBe('2')
+    expect(body.get('current_index')).toBe('0')
+    expect(body.has('typed_answer')).toBe(false)
+  })
+
+  it('submit() sends typed_answer for a spelling answer', async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      jsonResponse({
+        word: '你好',
+        user_answer: 'hello',
+        correct_answer: 'hello',
+        is_correct: true,
+        explanation: '',
+      }),
+    )
+
+    await api.submit({ typedAnswer: 'hello' }, 3)
+
+    const [, init] = vi.mocked(fetch).mock.calls[0]
+    const body = new URLSearchParams(String(init?.body))
+    expect(body.get('typed_answer')).toBe('hello')
+    expect(body.get('current_index')).toBe('3')
+    expect(body.has('selected_option_index')).toBe(false)
+  })
+
   it('reset() resolves on success', async () => {
     vi.mocked(fetch).mockResolvedValue(jsonResponse({ status: 'success' }))
 

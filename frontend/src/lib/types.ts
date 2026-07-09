@@ -1,7 +1,10 @@
+export type QuizType = 'multiple_choice' | 'spelling'
+
 export interface Topic {
   id: string
   name: string
   count: number
+  quiz_type: QuizType
 }
 
 export interface AnswerRecord {
@@ -15,6 +18,7 @@ export interface AnswerRecord {
 export interface Question {
   word: string
   options: string[]
+  quiz_type: QuizType
   current_index: number
   total_questions: number
   answer_record: AnswerRecord | null
@@ -25,6 +29,7 @@ export interface SessionInfo {
   completed?: boolean
   topic?: string
   mode?: string
+  quiz_type?: QuizType
   current_index?: number
   total_questions?: number
 }

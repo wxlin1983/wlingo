@@ -5,6 +5,7 @@ import { api } from '../lib/api'
 import type { Question, AnswerRecord } from '../lib/types'
 import ProgressBar from '../components/ProgressBar'
 import OptionButton, { type OptionState } from '../components/OptionButton'
+import SpellingInput from '../components/SpellingInput'
 import PageShell from '../components/PageShell'
 import Spinner from '../components/Spinner'
 
@@ -71,7 +72,23 @@ export default function QuizPage() {
       if (!question || result || submitting) return
       setSubmitting(true)
       try {
-        const r = await api.submit(optionIndex, index)
+        const r = await api.submit({ optionIndex }, index)
+        setResult(r)
+      } catch {
+        // ignore
+      } finally {
+        setSubmitting(false)
+      }
+    },
+    [question, result, submitting, index],
+  )
+
+  const handleTypedSubmit = useCallback(
+    async (typedAnswer: string) => {
+      if (!question || result || submitting) return
+      setSubmitting(true)
+      try {
+        const r = await api.submit({ typedAnswer }, index)
         setResult(r)
       } catch {
         // ignore
@@ -98,12 +115,21 @@ export default function QuizPage() {
   // Keyboard shortcuts
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (['1', '2', '3', '4'].includes(e.key) && !result && question) {
+      // Never hijack keystrokes meant for a focused text input (e.g. the
+      // spelling answer field) -- digits/"s" are valid answer characters.
+      const typing = e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement
+
+      if (
+        !typing &&
+        question?.quiz_type === 'multiple_choice' &&
+        ['1', '2', '3', '4'].includes(e.key) &&
+        !result
+      ) {
         const i = parseInt(e.key) - 1
         if (i < question.options.length) handleSubmit(i)
       }
       if (e.key === 'Enter' && result) goNext()
-      if (e.key.toLowerCase() === 's') speak()
+      if (!typing && e.key.toLowerCase() === 's') speak()
       if (e.key === 'Escape') cancel()
     }
     window.addEventListener('keydown', handler)
@@ -160,17 +186,28 @@ export default function QuizPage() {
             </button>
           </div>
 
-          {/* Options */}
-          <div className="space-y-3 mb-6">
-            {question.options.map((opt, i) => (
-              <OptionButton
-                key={i}
-                label={opt}
-                hotkey={i + 1}
-                state={optionState(i)}
-                onClick={() => handleSubmit(i)}
+          {/* Options / typed answer */}
+          <div className="mb-6">
+            {question.quiz_type === 'spelling' ? (
+              <SpellingInput
+                key={question.word}
+                disabled={!!result || submitting}
+                correct={result ? result.is_correct : undefined}
+                onSubmit={handleTypedSubmit}
               />
-            ))}
+            ) : (
+              <div className="space-y-3">
+                {question.options.map((opt, i) => (
+                  <OptionButton
+                    key={i}
+                    label={opt}
+                    hotkey={i + 1}
+                    state={optionState(i)}
+                    onClick={() => handleSubmit(i)}
+                  />
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Feedback */}
@@ -216,8 +253,16 @@ export default function QuizPage() {
 
         {/* Keyboard hint */}
         <p className="text-center text-xs text-gray-400 mt-4">
-          <strong>1–4</strong> select · <strong>Enter</strong> next · <strong>S</strong> listen ·{' '}
-          <strong>Esc</strong> cancel
+          {question.quiz_type === 'spelling' ? (
+            <>
+              <strong>Enter</strong> submit/next · <strong>Esc</strong> cancel
+            </>
+          ) : (
+            <>
+              <strong>1–4</strong> select · <strong>Enter</strong> next · <strong>S</strong> listen
+              · <strong>Esc</strong> cancel
+            </>
+          )}
         </p>
       </div>
     </PageShell>

@@ -323,6 +323,145 @@ def test_submit_invalid_option_index_returns_400(client):
 
 
 # ---------------------------------------------------------------------------
+# Spelling-mode submit_answer
+# ---------------------------------------------------------------------------
+
+
+def _inject_spelling_session(fake_redis, client):
+    """Insert a synthetic spelling-type SessionData into fake_redis."""
+    q = Question(
+        word="漢字",
+        translation="かんじ",
+        options=[],
+        quiz_type="spelling",
+    )
+    session = SessionData(
+        prepared_questions=[q],
+        correct_count=0,
+        total_questions=1,
+        answers=[],
+        created_at=datetime.now(),
+        topic="KanjiKana",
+        mode="adaptive",
+        quiz_type="spelling",
+    )
+    session_id = str(uuid.uuid4())
+    fake_redis.set(session_id, session.model_dump_json())
+    client.cookies.set(settings.SESSION_COOKIE_NAME, session_id)
+    return session_id
+
+
+def test_submit_typed_answer_exact_match_is_correct(client):
+    c, fake_redis = client
+    _inject_spelling_session(fake_redis, c)
+    resp = c.post("/submit_answer", data={"typed_answer": "かんじ", "current_index": 0})
+    assert resp.status_code == 200
+    assert resp.json()["is_correct"] is True
+
+
+def test_submit_typed_answer_wrong_is_incorrect(client):
+    c, fake_redis = client
+    _inject_spelling_session(fake_redis, c)
+    resp = c.post("/submit_answer", data={"typed_answer": "ちがう", "current_index": 0})
+    assert resp.json()["is_correct"] is False
+
+
+def test_submit_typed_answer_trims_and_lowercases_for_comparison(client):
+    c, fake_redis = client
+    q = Question(
+        word="hello",
+        translation="Bonjour",
+        options=[],
+        quiz_type="spelling",
+    )
+    session = SessionData(
+        prepared_questions=[q],
+        correct_count=0,
+        total_questions=1,
+        answers=[],
+        created_at=datetime.now(),
+        topic="ChineseSpelling",
+        mode="adaptive",
+        quiz_type="spelling",
+    )
+    session_id = str(uuid.uuid4())
+    fake_redis.set(session_id, session.model_dump_json())
+    c.cookies.set(settings.SESSION_COOKIE_NAME, session_id)
+
+    resp = c.post(
+        "/submit_answer", data={"typed_answer": "  bonjour ", "current_index": 0}
+    )
+    assert resp.json()["is_correct"] is True
+
+
+def test_submit_typed_answer_preserves_original_case_in_record(client):
+    c, fake_redis = client
+    q = Question(
+        word="hello",
+        translation="Bonjour",
+        options=[],
+        quiz_type="spelling",
+    )
+    session = SessionData(
+        prepared_questions=[q],
+        correct_count=0,
+        total_questions=1,
+        answers=[],
+        created_at=datetime.now(),
+        topic="ChineseSpelling",
+        mode="adaptive",
+        quiz_type="spelling",
+    )
+    session_id = str(uuid.uuid4())
+    fake_redis.set(session_id, session.model_dump_json())
+    c.cookies.set(settings.SESSION_COOKIE_NAME, session_id)
+
+    resp = c.post(
+        "/submit_answer", data={"typed_answer": "  Bonjour ", "current_index": 0}
+    )
+    # Trimmed, but not lowercased -- shows exactly what the user typed.
+    assert resp.json()["user_answer"] == "Bonjour"
+
+
+def test_submit_option_index_on_spelling_question_returns_400(client):
+    c, fake_redis = client
+    _inject_spelling_session(fake_redis, c)
+    resp = c.post(
+        "/submit_answer", data={"selected_option_index": 0, "current_index": 0}
+    )
+    assert resp.status_code == 400
+
+
+def test_submit_typed_answer_on_multiple_choice_question_returns_400(client):
+    c, _ = client
+    _start(c)
+    resp = c.post(
+        "/submit_answer", data={"typed_answer": "something", "current_index": 0}
+    )
+    assert resp.status_code == 400
+
+
+def test_submit_neither_answer_field_returns_400(client):
+    c, fake_redis = client
+    _inject_spelling_session(fake_redis, c)
+    resp = c.post("/submit_answer", data={"current_index": 0})
+    assert resp.status_code == 400
+
+
+def test_wrong_spelling_answer_creates_user_stats(client):
+    c, fake_redis = client
+    c.get("/")  # ensure user_id cookie is set
+    _inject_spelling_session(fake_redis, c)
+    user_id = c.cookies.get("wlingo_user_id")
+
+    c.post("/submit_answer", data={"typed_answer": "wrong", "current_index": 0})
+
+    stats_key = f"user_stats:{user_id}:KanjiKana"
+    stats = json.loads(fake_redis.get(stats_key))
+    assert stats == {"漢字": 1}
+
+
+# ---------------------------------------------------------------------------
 # Result endpoint
 # ---------------------------------------------------------------------------
 
