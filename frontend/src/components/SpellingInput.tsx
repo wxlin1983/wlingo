@@ -1,12 +1,14 @@
 import { useState, useRef, useEffect } from 'react'
+import { bind, unbind } from 'wanakana'
 
 interface Props {
   disabled: boolean
   correct?: boolean
+  romajiInput?: boolean
   onSubmit: (value: string) => void
 }
 
-export default function SpellingInput({ disabled, correct, onSubmit }: Props) {
+export default function SpellingInput({ disabled, correct, romajiInput, onSubmit }: Props) {
   const [value, setValue] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -14,9 +16,20 @@ export default function SpellingInput({ disabled, correct, onSubmit }: Props) {
     inputRef.current?.focus()
   }, [])
 
+  // wanakana owns the DOM input's value directly for live romaji->kana
+  // conversion, which would fight a React-controlled value/onChange pair --
+  // so this input is uncontrolled whenever romajiInput is on.
+  useEffect(() => {
+    if (!romajiInput || !inputRef.current) return
+    const el = inputRef.current
+    bind(el)
+    return () => unbind(el)
+  }, [romajiInput])
+
   function handleSubmit() {
-    if (disabled || !value.trim()) return
-    onSubmit(value)
+    const text = (romajiInput ? inputRef.current?.value : value) ?? ''
+    if (disabled || !text.trim()) return
+    onSubmit(text)
   }
 
   const stateClass =
@@ -31,13 +44,13 @@ export default function SpellingInput({ disabled, correct, onSubmit }: Props) {
       <input
         ref={inputRef}
         type="text"
-        value={value}
+        value={romajiInput ? undefined : value}
+        onChange={romajiInput ? undefined : (e) => setValue(e.target.value)}
         disabled={disabled}
-        onChange={(e) => setValue(e.target.value)}
         onKeyDown={(e) => {
           if (e.key === 'Enter') handleSubmit()
         }}
-        placeholder="Type your answer…"
+        placeholder={romajiInput ? 'Type romaji, e.g. kanji…' : 'Type your answer…'}
         autoComplete="off"
         autoCapitalize="off"
         spellCheck={false}

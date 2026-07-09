@@ -25,6 +25,7 @@ const QUESTION: Question = {
   word: 'hello',
   options: ['你好', '再見', '謝謝', '對不起'],
   quiz_type: 'multiple_choice',
+  romaji_input: false,
   current_index: 0,
   total_questions: 5,
   answer_record: null,
@@ -34,6 +35,17 @@ const SPELLING_QUESTION: Question = {
   word: '你好',
   options: [],
   quiz_type: 'spelling',
+  romaji_input: false,
+  current_index: 0,
+  total_questions: 5,
+  answer_record: null,
+}
+
+const KANA_SPELLING_QUESTION: Question = {
+  word: '漢字',
+  options: [],
+  quiz_type: 'spelling',
+  romaji_input: true,
   current_index: 0,
   total_questions: 5,
   answer_record: null,
@@ -136,5 +148,19 @@ describe('QuizPage spelling mode', () => {
     expect(speakSpy).not.toHaveBeenCalled()
 
     vi.unstubAllGlobals()
+  })
+})
+
+describe('QuizPage kana spelling mode', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(api.session).mockResolvedValue({ active: true, topic: 'Japanese_Kanji' })
+    vi.mocked(api.question).mockResolvedValue(KANA_SPELLING_QUESTION)
+  })
+
+  it('renders a romaji-input placeholder for kana spelling topics', async () => {
+    renderAtIndex('0')
+    expect(await screen.findByText('漢字')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText(/type romaji/i)).toBeInTheDocument()
   })
 })

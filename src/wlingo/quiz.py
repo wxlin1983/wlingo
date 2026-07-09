@@ -28,6 +28,7 @@ class RandomQuizGenerator:
             return []
 
         quiz_type = self.vocab_manager.get_quiz_type(topic)
+        romaji_input = self.vocab_manager.get_romaji_input(topic)
 
         count = min(count, len(word_list))
         if word_weights:
@@ -43,6 +44,7 @@ class RandomQuizGenerator:
                     options=[],
                     explanation=item.get("explanation", ""),
                     quiz_type="spelling",
+                    romaji_input=romaji_input,
                 )
                 for item in selected_words
             ]

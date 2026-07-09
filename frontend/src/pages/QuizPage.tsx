@@ -193,6 +193,7 @@ export default function QuizPage() {
                 key={question.word}
                 disabled={!!result || submitting}
                 correct={result ? result.is_correct : undefined}
+                romajiInput={question.romaji_input}
                 onSubmit={handleTypedSubmit}
               />
             ) : (

@@ -1,12 +1,25 @@
 import glob
 import logging
 import os
+import re
 
 import pandas as pd
 
 from .models import Topic, Word
 
 logger = logging.getLogger(__name__)
+
+_KANA_PATTERN = re.compile(r"[぀-ヿ]")  # hiragana + katakana
+
+
+def _is_kana_topic(records: list[Word]) -> bool:
+    """True if most of a topic's answer keys (translations) contain kana
+    characters. Used to decide whether the frontend should offer live
+    romaji-to-kana conversion in the spelling-answer input."""
+    if not records:
+        return False
+    kana_count = sum(1 for r in records if _KANA_PATTERN.search(r["translation"]))
+    return kana_count > len(records) / 2
 
 
 # --- Service Layer: Vocabulary Management ---
@@ -17,11 +30,13 @@ class VocabularyManager:
         self.directory = directory
         self.vocab_sets: dict[str, list[Word]] = {}
         self.topic_types: dict[str, str] = {}
+        self.romaji_input: dict[str, bool] = {}
         self.load_all()
 
     def load_all(self) -> None:
         self.vocab_sets = {}
         self.topic_types = {}
+        self.romaji_input = {}
         if not os.path.exists(self.directory):
             os.makedirs(self.directory)
             logger.warning(f"Created directory {self.directory}. Please add CSV files.")
@@ -54,8 +69,11 @@ class VocabularyManager:
                         df["explanation"] = df["explanation"].fillna("")
                     else:
                         df["explanation"] = ""
-                    self.vocab_sets[file_name] = df.to_dict("records")
+                    records = df.to_dict("records")
+                    self.vocab_sets[file_name] = records
                     self.topic_types[file_name] = quiz_type
+                    if quiz_type == "spelling":
+                        self.romaji_input[file_name] = _is_kana_topic(records)
                     logger.info(f"Loaded {len(df)} words from {file_name}")
                 else:
                     logger.error(f"Skipping {file_name}: Missing columns.")
@@ -67,6 +85,9 @@ class VocabularyManager:
 
     def get_quiz_type(self, topic: str) -> str:
         return self.topic_types.get(topic, "multiple_choice")
+
+    def get_romaji_input(self, topic: str) -> bool:
+        return self.romaji_input.get(topic, False)
 
     def get_topics(self) -> list[Topic]:
         topics: list[Topic] = []

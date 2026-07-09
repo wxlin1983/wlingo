@@ -190,6 +190,29 @@ def test_get_question_api_returns_question_data(client):
     assert len(data["options"]) == 4
 
 
+def test_get_question_api_multiple_choice_has_romaji_input_false(client):
+    c, _ = client
+    _start(c, "English")
+    data = c.get("/api/quiz/0").json()
+    assert data["romaji_input"] is False
+
+
+def test_get_question_api_kana_spelling_topic_has_romaji_input_true(client):
+    c, _ = client
+    _start(c, "Japanese_Kanji")
+    data = c.get("/api/quiz/0").json()
+    assert data["quiz_type"] == "spelling"
+    assert data["romaji_input"] is True
+
+
+def test_get_question_api_latin_spelling_topic_has_romaji_input_false(client):
+    c, _ = client
+    _start(c, "Chinese_Spelling")
+    data = c.get("/api/quiz/0").json()
+    assert data["quiz_type"] == "spelling"
+    assert data["romaji_input"] is False
+
+
 def test_get_question_api_out_of_range_returns_404(client):
     c, _ = client
     _start(c)

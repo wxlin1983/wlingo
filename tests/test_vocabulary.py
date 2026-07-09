@@ -89,6 +89,45 @@ def test_get_quiz_type_unknown_topic_defaults_to_multiple_choice(tmp_path):
 
 
 # ---------------------------------------------------------------------------
+# Romaji input detection
+# ---------------------------------------------------------------------------
+
+
+def test_kana_answers_enable_romaji_input(tmp_path):
+    spelling_dir = tmp_path / "spelling"
+    spelling_dir.mkdir()
+    (spelling_dir / "KanjiKana.csv").write_text(
+        "word,translation\n漢字,かんじ\n日本,にほん\n"
+    )
+    vm = VocabularyManager(str(tmp_path))
+    assert vm.get_romaji_input("KanjiKana") is True
+
+
+def test_latin_answers_do_not_enable_romaji_input(tmp_path):
+    spelling_dir = tmp_path / "spelling"
+    spelling_dir.mkdir()
+    (spelling_dir / "ChineseSpelling.csv").write_text(
+        "word,translation\n你好,hello\n世界,world\n"
+    )
+    vm = VocabularyManager(str(tmp_path))
+    assert vm.get_romaji_input("ChineseSpelling") is False
+
+
+def test_multiple_choice_topic_never_gets_romaji_input(tmp_path):
+    # Even if a top-level (multiple-choice) topic happened to have kana
+    # translations, romaji input is only ever computed for spelling topics.
+    (tmp_path / "Kana.csv").write_text("word,translation\nhello,かんじ\n")
+    vm = VocabularyManager(str(tmp_path))
+    assert vm.get_quiz_type("Kana") == "multiple_choice"
+    assert vm.get_romaji_input("Kana") is False
+
+
+def test_get_romaji_input_unknown_topic_defaults_to_false(tmp_path):
+    vm = VocabularyManager(str(tmp_path))
+    assert vm.get_romaji_input("DoesNotExist") is False
+
+
+# ---------------------------------------------------------------------------
 # get_words
 # ---------------------------------------------------------------------------
 

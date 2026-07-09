@@ -6,6 +6,9 @@ from wlingo.quiz import RandomQuizGenerator
 
 SAMPLE_WORDS = [{"word": f"word{i}", "translation": f"trans{i}"} for i in range(20)]
 SPELLING_WORDS = [{"word": f"kanji{i}", "translation": f"kana{i}"} for i in range(20)]
+KANA_SPELLING_WORDS = [
+    {"word": f"漢字{i}", "translation": f"かな{i}"} for i in range(20)
+]
 
 
 class MockVocabManager:
@@ -14,10 +17,19 @@ class MockVocabManager:
             return SAMPLE_WORDS
         if topic == "spelling_test":
             return SPELLING_WORDS
+        if topic == "kana_spelling_test":
+            return KANA_SPELLING_WORDS
         return []
 
     def get_quiz_type(self, topic: str) -> str:
-        return "spelling" if topic == "spelling_test" else "multiple_choice"
+        return (
+            "spelling"
+            if topic in ("spelling_test", "kana_spelling_test")
+            else "multiple_choice"
+        )
+
+    def get_romaji_input(self, topic: str) -> bool:
+        return topic == "kana_spelling_test"
 
 
 # ---------------------------------------------------------------------------
@@ -60,6 +72,9 @@ class TestRandomQuizGenerator:
             def get_quiz_type(self, topic):
                 return "multiple_choice"
 
+            def get_romaji_input(self, topic):
+                return False
+
         gen = RandomQuizGenerator(TinyVocab())
         assert len(gen.generate("test", 100)) == 2
 
@@ -72,6 +87,9 @@ class TestRandomQuizGenerator:
 
             def get_quiz_type(self, topic):
                 return "multiple_choice"
+
+            def get_romaji_input(self, topic):
+                return False
 
         gen = RandomQuizGenerator(SingleWordVocab())
         questions = gen.generate("test", 1)
@@ -163,3 +181,15 @@ class TestSpellingQuizGeneration:
             )
         )
         assert appearances > 70
+
+    def test_non_kana_spelling_questions_have_romaji_input_disabled(self):
+        for q in self.gen.generate("spelling_test", 10):
+            assert q.romaji_input is False
+
+    def test_kana_spelling_questions_have_romaji_input_enabled(self):
+        for q in self.gen.generate("kana_spelling_test", 10):
+            assert q.romaji_input is True
+
+    def test_multiple_choice_questions_have_romaji_input_disabled(self):
+        for q in self.gen.generate("test", 10):
+            assert q.romaji_input is False

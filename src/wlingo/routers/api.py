@@ -127,6 +127,7 @@ def get_question_data(
         "word": current_q.word,
         "options": current_q.options,
         "quiz_type": current_q.quiz_type,
+        "romaji_input": current_q.romaji_input,
         "current_index": index,
         "total_questions": session_data.total_questions,
         "answer_record": record,

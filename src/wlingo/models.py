@@ -28,6 +28,7 @@ class Question(BaseModel):
     options: list[str] = []
     explanation: str = ""
     quiz_type: str = "multiple_choice"
+    romaji_input: bool = False
 
 
 class AnswerRecord(BaseModel):
