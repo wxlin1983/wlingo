@@ -5,23 +5,30 @@ import type { Topic, SessionInfo } from '../lib/types'
 import ModeToggle from '../components/ModeToggle'
 import ResumeCard from '../components/ResumeCard'
 import PageShell from '../components/PageShell'
-import PrimaryButton from '../components/PrimaryButton'
+import TopicSection from '../components/TopicSection'
 
 export default function StartPage() {
   const [topics, setTopics] = useState<Topic[]>([])
-  const [selectedTopic, setSelectedTopic] = useState('')
+  const [selectedMcTopic, setSelectedMcTopic] = useState('')
+  const [selectedSpellingTopic, setSelectedSpellingTopic] = useState('')
   const [mode, setMode] = useState<'adaptive' | 'random'>('adaptive')
   const [session, setSession] = useState<SessionInfo | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const navigate = useNavigate()
 
+  const mcTopics = topics.filter((t) => t.quiz_type === 'multiple_choice')
+  const spellingTopics = topics.filter((t) => t.quiz_type === 'spelling')
+
   useEffect(() => {
     api
       .topics()
       .then((t) => {
         setTopics(t)
-        if (t.length > 0) setSelectedTopic(t[0].id)
+        const mc = t.filter((x) => x.quiz_type === 'multiple_choice')
+        const spelling = t.filter((x) => x.quiz_type === 'spelling')
+        if (mc.length > 0) setSelectedMcTopic(mc[0].id)
+        if (spelling.length > 0) setSelectedSpellingTopic(spelling[0].id)
       })
       .catch(() => setError('Failed to load topics'))
 
@@ -33,13 +40,12 @@ export default function StartPage() {
       .catch(() => {})
   }, [])
 
-  async function handleStart(e: React.FormEvent) {
-    e.preventDefault()
-    if (!selectedTopic) return
+  async function handleStart(topic: string) {
+    if (!topic) return
     setLoading(true)
     setError('')
     try {
-      const res = await api.start(selectedTopic, mode)
+      const res = await api.start(topic, mode)
       // 302 → type:'opaqueredirect', status:0 → success
       // 400+ → type:'default', ok:false → error
       if (res.type === 'opaqueredirect' || res.ok) {
@@ -67,38 +73,31 @@ export default function StartPage() {
         {/* Resume banner */}
         {session && <ResumeCard session={session} className="mb-4" />}
 
-        {/* Main card */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 space-y-6">
-          {/* Topic selector */}
-          <div>
-            <label htmlFor="topic" className="block text-sm font-semibold text-gray-600 mb-2">
-              Vocabulary Set
-            </label>
-            <select
-              id="topic"
-              value={selectedTopic}
-              onChange={(e) => setSelectedTopic(e.target.value)}
-              disabled={topics.length === 0}
-              className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-sky-400 focus:outline-none text-gray-700 bg-white disabled:opacity-50 transition-colors"
-            >
-              {topics.length === 0 && <option>Loading…</option>}
-              {topics.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.name} ({t.count} words)
-                </option>
-              ))}
-            </select>
-            {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
-          </div>
-
-          {/* Mode selector */}
+        {/* Mode selector — shared, applies to whichever section starts a quiz */}
+        <div className="bg-white rounded-2xl shadow-lg p-6 mb-4">
           <ModeToggle value={mode} onChange={setMode} />
-
-          {/* Start button */}
-          <PrimaryButton onClick={handleStart} disabled={topics.length === 0 || loading}>
-            {loading ? 'Starting…' : 'Start Quiz ▶'}
-          </PrimaryButton>
         </div>
+
+        <div className="space-y-4">
+          <TopicSection
+            title="Multiple Choice"
+            topics={mcTopics}
+            selectedTopic={selectedMcTopic}
+            onSelectTopic={setSelectedMcTopic}
+            onStart={() => handleStart(selectedMcTopic)}
+            loading={loading}
+          />
+          <TopicSection
+            title="Spelling Practice"
+            topics={spellingTopics}
+            selectedTopic={selectedSpellingTopic}
+            onSelectTopic={setSelectedSpellingTopic}
+            onStart={() => handleStart(selectedSpellingTopic)}
+            loading={loading}
+          />
+        </div>
+
+        {error && <p className="text-red-500 text-sm text-center mt-4">{error}</p>}
       </div>
     </PageShell>
   )
