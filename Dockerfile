@@ -47,6 +47,12 @@ COPY src/wlingo wlingo/
 COPY src/vocabulary vocabulary/
 COPY --from=frontend-build /frontend/dist/ static/
 
+# Run as an unprivileged user; the log directory is the only path the app
+# writes to at runtime.
+RUN useradd --system --no-create-home wlingo && \
+    mkdir -p log && chown wlingo log
+USER wlingo
+
 EXPOSE 8002
 
 CMD ["uvicorn", "wlingo.main:app", "--host", "0.0.0.0", "--port", "8002", "--workers", "4"]

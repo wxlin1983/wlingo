@@ -8,6 +8,19 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+    healthcheck:
+      # urlopen raises on connection failure or non-2xx, failing the check
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8002/api/health', timeout=3)",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     networks:
       - wlingo-net
   redis:

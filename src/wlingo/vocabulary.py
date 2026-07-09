@@ -1,9 +1,8 @@
+import csv
 import glob
 import logging
 import os
 import re
-
-import pandas as pd
 
 from .models import Topic, Word
 
@@ -63,22 +62,48 @@ class VocabularyManager:
         for file_path in csv_files:
             try:
                 file_name = os.path.splitext(os.path.basename(file_path))[0]
-                df = pd.read_csv(file_path, encoding="utf-8")
-                if "word" in df.columns and "translation" in df.columns:
-                    if "explanation" in df.columns:
-                        df["explanation"] = df["explanation"].fillna("")
-                    else:
-                        df["explanation"] = ""
-                    records = df.to_dict("records")
-                    self.vocab_sets[file_name] = records
-                    self.topic_types[file_name] = quiz_type
-                    if quiz_type == "spelling":
-                        self.romaji_input[file_name] = _is_kana_topic(records)
-                    logger.info(f"Loaded {len(df)} words from {file_name}")
-                else:
+                records = self._read_csv(file_path)
+                if records is None:
                     logger.error(f"Skipping {file_name}: Missing columns.")
+                    continue
+                if not records:
+                    logger.error(f"Skipping {file_name}: No usable rows.")
+                    continue
+                self.vocab_sets[file_name] = records
+                self.topic_types[file_name] = quiz_type
+                if quiz_type == "spelling":
+                    self.romaji_input[file_name] = _is_kana_topic(records)
+                logger.info(f"Loaded {len(records)} words from {file_name}")
             except Exception as e:
                 logger.error(f"Failed to load {file_path}: {e}")
+
+    @staticmethod
+    def _read_csv(file_path: str) -> list[Word] | None:
+        """Parse a vocabulary CSV. Returns None if the required columns are
+        missing; rows with an empty word or translation are dropped."""
+        with open(file_path, encoding="utf-8-sig", newline="") as f:
+            reader = csv.DictReader(f)
+            fields = reader.fieldnames or []
+            if "word" not in fields or "translation" not in fields:
+                return None
+            records: list[Word] = []
+            for line_num, row in enumerate(reader, start=2):
+                word = (row.get("word") or "").strip()
+                translation = (row.get("translation") or "").strip()
+                if not word or not translation:
+                    logger.warning(
+                        f"Dropping {file_path} line {line_num}: "
+                        "empty word or translation."
+                    )
+                    continue
+                records.append(
+                    {
+                        "word": word,
+                        "translation": translation,
+                        "explanation": (row.get("explanation") or "").strip(),
+                    }
+                )
+        return records
 
     def get_words(self, topic: str) -> list[Word]:
         return self.vocab_sets.get(topic, [])

@@ -1,7 +1,8 @@
 import json
 import logging
+import secrets
 import uuid
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, Form, Header, HTTPException, Response
 from fastapi.responses import JSONResponse, RedirectResponse
@@ -9,10 +10,16 @@ from redis import Redis
 from redis.exceptions import RedisError, WatchError
 
 from ..config import settings
-from ..globals import vocab_manager
+from ..globals import bump_vocab_version, sync_vocab, vocab_manager
 from ..models import AnswerRecord, SessionData
 from ..quiz import VALID_MODES, RandomQuizGenerator
-from .deps import get_active_session, get_redis, get_session_id, get_user_id
+from .deps import (
+    get_active_session,
+    get_redis,
+    get_session_id,
+    get_user_id,
+    session_key,
+)
 
 router = APIRouter()
 logger = logging.getLogger("wlingo")
@@ -32,7 +39,8 @@ def health_check(redis: Redis = Depends(get_redis)):
 
 
 @router.get("/api/topics")
-def get_topics():
+def get_topics(redis: Redis = Depends(get_redis)):
+    sync_vocab(redis)
     return vocab_manager.get_topics()
 
 
@@ -60,6 +68,7 @@ def start_quiz_session(
     user_id: str | None = Depends(get_user_id),
     redis: Redis = Depends(get_redis),
 ):
+    sync_vocab(redis)
     topic = topic.strip()[:100]
     if not vocab_manager.get_words(topic):
         raise HTTPException(status_code=400, detail=f"Unknown topic: {topic!r}")
@@ -86,13 +95,13 @@ def start_quiz_session(
         correct_count=0,
         total_questions=len(prepared_questions),
         answers=[],
-        created_at=datetime.now(),
+        created_at=datetime.now(UTC),
         topic=topic,
         mode=mode,
         quiz_type=vocab_manager.get_quiz_type(topic),
     )
     redis.set(
-        new_id,
+        session_key(new_id),
         session_data.model_dump_json(),
         ex=timedelta(minutes=settings.SESSION_TIMEOUT_MINUTES),
     )
@@ -144,8 +153,10 @@ def submit_answer(
     user_id: str | None = Depends(get_user_id),
     redis: Redis = Depends(get_redis),
 ):
-    if not session_data or not (0 <= current_index < session_data.total_questions):
+    if not session_data:
         return JSONResponse({"error": "Invalid session"}, status_code=401)
+    if not (0 <= current_index < session_data.total_questions):
+        return JSONResponse({"error": "Index error"}, status_code=400)
     if current_index != len(session_data.answers):
         return JSONResponse(
             {"error": "Answers must be submitted in order"}, status_code=400
@@ -166,9 +177,6 @@ def submit_answer(
         user_answer_str = current_q.options[selected_option_index]
         is_correct = user_answer_str == current_q.translation
 
-    if is_correct:
-        session_data.correct_count += 1
-
     record = AnswerRecord(
         word=current_q.word,
         user_answer=user_answer_str,
@@ -176,12 +184,39 @@ def submit_answer(
         is_correct=is_correct,
         explanation=current_q.explanation,
     )
-    session_data.answers.append(record)
-    redis.set(
-        session_id,
-        session_data.model_dump_json(),
-        ex=timedelta(minutes=settings.SESSION_TIMEOUT_MINUTES),
-    )
+
+    # Optimistic locking (WATCH), mirroring _update_user_stats: without it,
+    # two concurrent submits of the same index could both pass the ordering
+    # check above and double-append.
+    key = session_key(session_id)
+    with redis.pipeline() as pipe:
+        while True:
+            try:
+                pipe.watch(key)
+                raw = pipe.get(key)
+                if raw is None:
+                    pipe.unwatch()
+                    return JSONResponse({"error": "Invalid session"}, status_code=401)
+                fresh = SessionData.model_validate_json(raw)
+                if current_index != len(fresh.answers):
+                    pipe.unwatch()
+                    return JSONResponse(
+                        {"error": "Answers must be submitted in order"},
+                        status_code=400,
+                    )
+                if is_correct:
+                    fresh.correct_count += 1
+                fresh.answers.append(record)
+                pipe.multi()
+                pipe.set(
+                    key,
+                    fresh.model_dump_json(),
+                    ex=timedelta(minutes=settings.SESSION_TIMEOUT_MINUTES),
+                )
+                pipe.execute()
+                break
+            except WatchError:
+                continue
 
     # Track wrong answers for adaptive mode only
     if session_data.mode == "adaptive" and user_id:
@@ -248,15 +283,23 @@ def reset_session(
     redis: Redis = Depends(get_redis),
 ):
     if session_id:
-        redis.delete(session_id)
+        redis.delete(session_key(session_id))
     response.delete_cookie(settings.SESSION_COOKIE_NAME)
     return {"status": "success"}
 
 
 @router.post("/api/admin/reload-vocab")
-def reload_vocab(x_admin_token: str | None = Header(default=None)):
-    if not settings.ADMIN_TOKEN or x_admin_token != settings.ADMIN_TOKEN:
+def reload_vocab(
+    x_admin_token: str | None = Header(default=None),
+    redis: Redis = Depends(get_redis),
+):
+    if not settings.ADMIN_TOKEN or not secrets.compare_digest(
+        x_admin_token or "", settings.ADMIN_TOKEN
+    ):
         raise HTTPException(status_code=403, detail="Forbidden")
     vocab_manager.load_all()
+    # Tell the other uvicorn workers (each with its own in-process vocab copy)
+    # to reload lazily on their next vocab-reading request.
+    bump_vocab_version(redis)
     topics = vocab_manager.get_topics()
     return {"loaded": len(topics), "topics": [t["id"] for t in topics]}

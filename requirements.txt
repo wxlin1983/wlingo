@@ -18,28 +18,18 @@ httptools==0.7.1
     # via uvicorn
 idna==3.10
     # via anyio
-numpy==2.2.4
-    # via pandas
-pandas==2.3.3
-    # via wlingo (pyproject.toml)
 pydantic==2.12.5
     # via fastapi
 pydantic-core==2.41.5
     # via pydantic
-python-dateutil==2.9.0.post0
-    # via pandas
 python-dotenv==1.2.1
     # via uvicorn
 python-multipart==0.0.20
     # via wlingo (pyproject.toml)
-pytz==2025.2
-    # via pandas
 pyyaml==6.0.3
     # via uvicorn
 redis==5.0.7
     # via wlingo (pyproject.toml)
-six==1.17.0
-    # via python-dateutil
 starlette==0.50.0
     # via fastapi
 typing-extensions==4.15.0
@@ -52,8 +42,6 @@ typing-extensions==4.15.0
     #   typing-inspection
 typing-inspection==0.4.2
     # via pydantic
-tzdata==2025.2
-    # via pandas
 uvicorn==0.38.0
     # via wlingo (pyproject.toml)
 uvloop==0.22.1

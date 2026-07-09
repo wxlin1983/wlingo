@@ -90,8 +90,9 @@ Two namespaces stored in Redis:
 
 | Key pattern | Value | TTL |
 |---|---|---|
-| `{session_uuid}` | `SessionData` JSON | `SESSION_TIMEOUT_MINUTES` (120 min) |
+| `session:{session_uuid}` | `SessionData` JSON | `SESSION_TIMEOUT_MINUTES` (120 min) |
 | `user_stats:{user_id}:{topic}` | `{"word": wrong_count, ...}` JSON | `USER_STATS_TTL_DAYS` (90 days) |
+| `vocab_version` | integer counter, bumped by `/api/admin/reload-vocab` | none |
 
 Session data is also soft-expired on read in `get_active_session()` (belt-and-suspenders alongside the Redis TTL).
 
@@ -102,12 +103,12 @@ Session data is also soft-expired on read in `get_active_session()` (belt-and-su
 
 ### Quiz modes
 
-`QuizFactory.create(mode, vocab_manager)` returns a `QuizGenerator`. Valid modes:
+There is a single generator class, `RandomQuizGenerator` (`quiz.py`); the mode only controls whether user history is applied. Valid modes:
 
 - `"adaptive"` — weighted sampling biased toward previously missed words (default)
 - `"random"` — pure random shuffle, ignores user history
 
-`QuizFactory.VALID_MODES` (`quiz.py`) is the single source of truth for valid modes — routers import and check against it rather than keeping a second copy. Only `"adaptive"` mode writes/reads `user_stats` keys. To add a new mode, subclass `QuizGenerator` in `quiz.py`, register it in `QuizFactory.create`, and add it to `VALID_MODES`.
+The module-level `VALID_MODES` set (`quiz.py`) is the single source of truth for valid modes — routers import and check against it rather than keeping a second copy. Only `"adaptive"` mode writes/reads `user_stats` keys and passes `word_weights` into `generator.generate()`; `"random"` passes none.
 
 Adaptive weighting: wrong answers increment a counter in `user_stats`. On `/start`, these weights are fetched and passed to `generator.generate()`, which uses `_weighted_sample` to bias question selection toward previously missed words (boost capped at 3× to prevent domination).
 
@@ -117,7 +118,7 @@ Adaptive weighting: wrong answers increment a counter in `user_stats`. On `/star
 
 ### Vocabulary topics
 
-`VocabularyManager` scans `src/vocabulary/*.csv` at startup. Each CSV must have `word` and `translation` columns; an optional `explanation` column is shown on wrong answers (see `scripts/generate_explanations.py` to backfill it via the Claude API). The filename (without extension) becomes the topic ID. `POST /api/admin/reload-vocab` triggers a hot reload without restarting the server — it requires an `X-Admin-Token` header matching `settings.ADMIN_TOKEN` (unset by default, which denies all requests).
+`VocabularyManager` scans `src/vocabulary/*.csv` at startup. Each CSV must have `word` and `translation` columns; an optional `explanation` column is shown on wrong answers (see `scripts/generate_explanations.py` to backfill it via the Claude API). The filename (without extension) becomes the topic ID. `POST /api/admin/reload-vocab` triggers a hot reload without restarting the server — it requires an `X-Admin-Token` header matching `settings.ADMIN_TOKEN` (unset by default, which denies all requests). Because the production image runs multiple uvicorn workers (each with its own in-process `vocab_manager`), the reload endpoint bumps a `vocab_version` counter in Redis; every worker compares its local version against it on vocab-reading requests and lazily reloads when stale.
 
 ### Testing
 

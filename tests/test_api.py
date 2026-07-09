@@ -6,17 +6,18 @@ The TestClient is function-scoped, giving each test a clean slate.
 
 import json
 import uuid
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 import fakeredis
 import pytest
 from fastapi.testclient import TestClient
 
+import wlingo.globals
 from wlingo.app import create_app
 from wlingo.config import settings
 from wlingo.models import Question, SessionData
 from wlingo.routers.api import _update_user_stats
-from wlingo.routers.deps import get_redis
+from wlingo.routers.deps import get_redis, session_key
 
 # ---------------------------------------------------------------------------
 # Fixture
@@ -43,7 +44,7 @@ def _start(client, topic="English", mode="adaptive"):
 def _session(fake_redis, client) -> dict:
     """Return the session for the current client, looked up by cookie."""
     session_id = client.cookies.get(settings.SESSION_COOKIE_NAME)
-    raw = fake_redis.get(session_id)
+    raw = fake_redis.get(session_key(session_id))
     return json.loads(raw)
 
 
@@ -345,6 +346,17 @@ def test_submit_invalid_option_index_returns_400(client):
     assert resp.status_code == 400
 
 
+def test_submit_out_of_range_question_index_returns_400(client):
+    # A valid session with a nonsense question index is a bad request,
+    # not an authentication failure.
+    c, _ = client
+    _start(c)
+    resp = c.post(
+        "/submit_answer", data={"selected_option_index": 0, "current_index": 999}
+    )
+    assert resp.status_code == 400
+
+
 # ---------------------------------------------------------------------------
 # Spelling-mode submit_answer
 # ---------------------------------------------------------------------------
@@ -363,13 +375,13 @@ def _inject_spelling_session(fake_redis, client):
         correct_count=0,
         total_questions=1,
         answers=[],
-        created_at=datetime.now(),
+        created_at=datetime.now(UTC),
         topic="KanjiKana",
         mode="adaptive",
         quiz_type="spelling",
     )
     session_id = str(uuid.uuid4())
-    fake_redis.set(session_id, session.model_dump_json())
+    fake_redis.set(session_key(session_id), session.model_dump_json())
     client.cookies.set(settings.SESSION_COOKIE_NAME, session_id)
     return session_id
 
@@ -402,13 +414,13 @@ def test_submit_typed_answer_trims_and_lowercases_for_comparison(client):
         correct_count=0,
         total_questions=1,
         answers=[],
-        created_at=datetime.now(),
+        created_at=datetime.now(UTC),
         topic="ChineseSpelling",
         mode="adaptive",
         quiz_type="spelling",
     )
     session_id = str(uuid.uuid4())
-    fake_redis.set(session_id, session.model_dump_json())
+    fake_redis.set(session_key(session_id), session.model_dump_json())
     c.cookies.set(settings.SESSION_COOKIE_NAME, session_id)
 
     resp = c.post(
@@ -430,13 +442,13 @@ def test_submit_typed_answer_preserves_original_case_in_record(client):
         correct_count=0,
         total_questions=1,
         answers=[],
-        created_at=datetime.now(),
+        created_at=datetime.now(UTC),
         topic="ChineseSpelling",
         mode="adaptive",
         quiz_type="spelling",
     )
     session_id = str(uuid.uuid4())
-    fake_redis.set(session_id, session.model_dump_json())
+    fake_redis.set(session_key(session_id), session.model_dump_json())
     c.cookies.set(settings.SESSION_COOKIE_NAME, session_id)
 
     resp = c.post(
@@ -617,6 +629,25 @@ def test_wrong_answer_creates_user_stats(client):
     assert stats[q["word"]] == 1
 
 
+def test_invalid_user_cookie_is_ignored_for_stats(client):
+    """A forged non-UUID user cookie must not mint arbitrary Redis keys."""
+    c, fake_redis = client
+    c.cookies.set(settings.USER_COOKIE_NAME, "../../not-a-uuid")
+    _start(c, "English")
+
+    session = _session(fake_redis, c)
+    q = session["prepared_questions"][0]
+    wrong_index = next(
+        i for i, opt in enumerate(q["options"]) if opt != q["translation"]
+    )
+    c.post(
+        "/submit_answer",
+        data={"selected_option_index": wrong_index, "current_index": 0},
+    )
+
+    assert fake_redis.keys("user_stats:*") == []
+
+
 def test_random_mode_does_not_create_user_stats(client):
     """Random mode skips user-stats tracking."""
     c, fake_redis = client
@@ -666,12 +697,12 @@ def test_wrong_answer_increments_count(client):
         correct_count=0,
         total_questions=1,
         answers=[],
-        created_at=datetime.now(),
+        created_at=datetime.now(UTC),
         topic="English",
         mode="adaptive",
     )
     session2_id = str(uuid.uuid4())
-    fake_redis.set(session2_id, session2.model_dump_json())
+    fake_redis.set(session_key(session2_id), session2.model_dump_json())
     c.cookies.set(settings.SESSION_COOKIE_NAME, session2_id)
 
     # Wrong answer again → count increments to 2
@@ -748,14 +779,14 @@ def _inject_session(fake_redis, client, created_at: datetime, topic: str = "Engl
         mode="adaptive",
     )
     session_id = str(uuid.uuid4())
-    fake_redis.set(session_id, session.model_dump_json())
+    fake_redis.set(session_key(session_id), session.model_dump_json())
     client.cookies.set(settings.SESSION_COOKIE_NAME, session_id)
     return session_id
 
 
 def test_expired_session_returns_401(client):
     c, fake_redis = client
-    expired_at = datetime.now() - timedelta(
+    expired_at = datetime.now(UTC) - timedelta(
         minutes=settings.SESSION_TIMEOUT_MINUTES + 1
     )
     _inject_session(fake_redis, c, created_at=expired_at)
@@ -765,14 +796,14 @@ def test_expired_session_returns_401(client):
 
 def test_expired_session_is_deleted_from_redis(client):
     c, fake_redis = client
-    expired_at = datetime.now() - timedelta(
+    expired_at = datetime.now(UTC) - timedelta(
         minutes=settings.SESSION_TIMEOUT_MINUTES + 1
     )
     session_id = _inject_session(fake_redis, c, created_at=expired_at)
 
     c.get("/api/quiz/0")
 
-    assert not fake_redis.exists(session_id)
+    assert not fake_redis.exists(session_key(session_id))
 
 
 # ---------------------------------------------------------------------------
@@ -783,7 +814,7 @@ def test_expired_session_is_deleted_from_redis(client):
 def test_corrupt_session_payload_treated_as_no_session(client):
     c, fake_redis = client
     session_id = str(uuid.uuid4())
-    fake_redis.set(session_id, "not valid json at all")
+    fake_redis.set(session_key(session_id), "not valid json at all")
     c.cookies.set(settings.SESSION_COOKIE_NAME, session_id)
 
     resp = c.get("/api/session")
@@ -794,12 +825,12 @@ def test_corrupt_session_payload_treated_as_no_session(client):
 def test_corrupt_session_payload_is_deleted_from_redis(client):
     c, fake_redis = client
     session_id = str(uuid.uuid4())
-    fake_redis.set(session_id, "not valid json at all")
+    fake_redis.set(session_key(session_id), "not valid json at all")
     c.cookies.set(settings.SESSION_COOKIE_NAME, session_id)
 
     c.get("/api/session")
 
-    assert not fake_redis.exists(session_id)
+    assert not fake_redis.exists(session_key(session_id))
 
 
 def test_corrupt_user_stats_treated_as_empty(client):
@@ -916,6 +947,34 @@ def test_reload_vocab_with_correct_token_returns_topics(client, monkeypatch):
     assert data["loaded"] > 0
 
 
+def test_reload_vocab_bumps_shared_version(client, monkeypatch):
+    monkeypatch.setattr(settings, "ADMIN_TOKEN", "s3cret")
+    c, fake_redis = client
+    c.post("/api/admin/reload-vocab", headers={"X-Admin-Token": "s3cret"})
+    assert fake_redis.get(wlingo.globals.VOCAB_VERSION_KEY) == "1"
+    c.post("/api/admin/reload-vocab", headers={"X-Admin-Token": "s3cret"})
+    assert fake_redis.get(wlingo.globals.VOCAB_VERSION_KEY) == "2"
+
+
+def test_topics_reloads_vocab_when_version_bumped_elsewhere(client, monkeypatch):
+    """A worker whose local version lags the shared counter reloads lazily."""
+    c, fake_redis = client
+    monkeypatch.setattr(wlingo.globals, "_local_vocab_version", None)
+    calls: list[int] = []
+    monkeypatch.setattr(
+        wlingo.globals.vocab_manager, "load_all", lambda: calls.append(1)
+    )
+
+    # First request adopts the current shared version without reloading.
+    c.get("/api/topics")
+    assert calls == []
+
+    # Simulate another worker bumping the counter via reload-vocab.
+    fake_redis.incr(wlingo.globals.VOCAB_VERSION_KEY)
+    c.get("/api/topics")
+    assert calls == [1]
+
+
 # ---------------------------------------------------------------------------
 # /api/result with zero questions
 # ---------------------------------------------------------------------------
@@ -928,12 +987,12 @@ def test_result_api_with_zero_questions_returns_zero_score(client):
         correct_count=0,
         total_questions=0,
         answers=[],
-        created_at=datetime.now(),
+        created_at=datetime.now(UTC),
         topic="English",
         mode="adaptive",
     )
     session_id = str(uuid.uuid4())
-    fake_redis.set(session_id, session.model_dump_json())
+    fake_redis.set(session_key(session_id), session.model_dump_json())
     c.cookies.set(settings.SESSION_COOKIE_NAME, session_id)
 
     resp = c.get("/api/result")

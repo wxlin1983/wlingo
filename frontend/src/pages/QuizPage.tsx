@@ -9,9 +9,13 @@ import SpellingInput from '../components/SpellingInput'
 import PageShell from '../components/PageShell'
 import Spinner from '../components/Spinner'
 
+// Topic ID → BCP 47 tag for speech synthesis; topics not listed here fall
+// back to the browser's default voice.
 const LANG_MAP: Record<string, string> = {
   English: 'en-US',
   Korean: 'ko-KR',
+  Japanese_Kanji: 'ja-JP',
+  Chinese_Spelling: 'zh-CN',
 }
 
 export default function QuizPage() {

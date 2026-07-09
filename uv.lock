@@ -1006,7 +1006,6 @@ version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
     { name = "fastapi" },
-    { name = "pandas" },
     { name = "python-multipart" },
     { name = "redis" },
     { name = "uvicorn", extra = ["standard"] },
@@ -1018,6 +1017,7 @@ dev = [
 ]
 scripts = [
     { name = "anthropic" },
+    { name = "pandas" },
 ]
 test = [
     { name = "fakeredis" },
@@ -1031,7 +1031,7 @@ requires-dist = [
     { name = "fakeredis", marker = "extra == 'test'", specifier = ">=2.0" },
     { name = "fastapi", specifier = ">=0.124.0" },
     { name = "httpx", marker = "extra == 'test'", specifier = ">=0.27" },
-    { name = "pandas", specifier = ">=2.3.3" },
+    { name = "pandas", marker = "extra == 'scripts'", specifier = ">=2.3.3" },
     { name = "pytest", marker = "extra == 'test'", specifier = ">=8.0" },
     { name = "python-multipart", specifier = ">=0.0.20" },
     { name = "redis", specifier = ">=5.0.7" },

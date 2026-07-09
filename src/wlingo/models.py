@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Literal, TypedDict
 
-from pydantic import BaseModel
+from pydantic import AwareDatetime, BaseModel
 
 QuizType = Literal["multiple_choice", "spelling"]
 
@@ -44,7 +43,9 @@ class SessionData(BaseModel):
     correct_count: int
     total_questions: int
     answers: list[AnswerRecord]
-    created_at: datetime
+    # Aware (UTC) so expiry math in deps.py is well-defined; pre-existing
+    # sessions with naive timestamps fail validation and are dropped.
+    created_at: AwareDatetime
     topic: str
-    mode: str = "standard"
+    mode: str = "adaptive"
     quiz_type: str = "multiple_choice"
