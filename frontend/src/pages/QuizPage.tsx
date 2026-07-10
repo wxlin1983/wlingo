@@ -15,7 +15,8 @@ const LANG_MAP: Record<string, string> = {
   English: 'en-US',
   Korean: 'ko-KR',
   Japanese_Kanji: 'ja-JP',
-  Chinese_Translation: 'zh-CN',
+  Chinese_Translation: 'zh-TW',
+  Chinese_Pinyin: 'zh-TW',
 }
 
 export default function QuizPage() {

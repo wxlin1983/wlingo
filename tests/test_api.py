@@ -214,6 +214,16 @@ def test_get_question_api_translation_topic_has_romaji_input_false(client):
     assert data["romaji_input"] is False
 
 
+def test_get_question_api_pinyin_topic_is_spelling_without_romaji(client):
+    # Pinyin answers are Latin letters, so the kana-based romaji conversion
+    # must stay off even though it's a spelling topic.
+    c, _ = client
+    _start(c, "Chinese_Pinyin")
+    data = c.get("/api/quiz/0").json()
+    assert data["quiz_type"] == "spelling"
+    assert data["romaji_input"] is False
+
+
 def test_get_question_api_out_of_range_returns_404(client):
     c, _ = client
     _start(c)
@@ -484,6 +494,36 @@ def test_submit_typed_answer_on_translation_question(client):
     resp = c.post("/submit_answer", data={"typed_answer": "hello", "current_index": 0})
     assert resp.status_code == 200
     assert resp.json()["is_correct"] is True
+
+
+def test_submit_typed_answer_ignores_internal_spaces(client):
+    """Pinyin typed with syllable spaces ("ni hao") matches "nihao"."""
+    c, fake_redis = client
+    q = Question(
+        word="你好",
+        translation="nihao",
+        options=[],
+        quiz_type="spelling",
+    )
+    session = SessionData(
+        prepared_questions=[q],
+        correct_count=0,
+        total_questions=1,
+        answers=[],
+        created_at=datetime.now(UTC),
+        topic="Chinese_Pinyin",
+        mode="adaptive",
+        quiz_type="spelling",
+    )
+    session_id = str(uuid.uuid4())
+    fake_redis.set(session_key(session_id), session.model_dump_json())
+    c.cookies.set(settings.SESSION_COOKIE_NAME, session_id)
+
+    resp = c.post("/submit_answer", data={"typed_answer": "ni hao", "current_index": 0})
+    assert resp.status_code == 200
+    assert resp.json()["is_correct"] is True
+    # The record still shows what the user actually typed (trimmed only).
+    assert resp.json()["user_answer"] == "ni hao"
 
 
 def test_submit_option_index_on_spelling_question_returns_400(client):

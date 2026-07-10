@@ -1,0 +1,376 @@
+word,translation,explanation
+你好,nihao,nǐ hǎo — hello
+謝謝,xiexie,xièxie — thank you
+再見,zaijian,zàijiàn — goodbye
+請,qing,qǐng — please
+對不起,duibuqi,duìbuqǐ — sorry
+沒關係,meiguanxi,méiguānxi — it's okay
+早安,zaoan,zǎo'ān — good morning
+晚安,wanan,wǎn'ān — good night
+歡迎,huanying,huānyíng — welcome
+我,wo,wǒ — I / me
+你,ni,nǐ — you
+他,ta,tā — he
+她,ta,tā — she
+我們,women,wǒmen — we
+你們,nimen,nǐmen — you (plural)
+他們,tamen,tāmen — they
+大家,dajia,dàjiā — everyone
+什麼,shenme,shénme — what
+朋友,pengyou,péngyǒu — friend
+家人,jiaren,jiārén — family
+爸爸,baba,bàba — dad
+媽媽,mama,māma — mom
+哥哥,gege,gēge — older brother
+姐姐,jiejie,jiějie — older sister
+弟弟,didi,dìdi — younger brother
+妹妹,meimei,mèimei — younger sister
+爺爺,yeye,yéye — grandpa
+奶奶,nainai,nǎinai — grandma
+叔叔,shushu,shūshu — uncle
+阿姨,ayi,āyí — aunt
+兒子,erzi,érzi — son
+老師,laoshi,lǎoshī — teacher
+學生,xuesheng,xuéshēng — student
+醫生,yisheng,yīshēng — doctor
+警察,jingcha,jǐngchá — police
+老闆,laoban,lǎobǎn — boss
+客人,keren,kèrén — guest
+小孩,xiaohai,xiǎohái — child
+男人,nanren,nánrén — man
+先生,xiansheng,xiānshēng — Mr. / husband
+小姐,xiaojie,xiǎojiě — Miss
+人,ren,rén — person
+一,yi,yī — one
+二,er,èr — two
+三,san,sān — three
+四,si,sì — four
+五,wu,wǔ — five
+六,liu,liù — six
+七,qi,qī — seven
+八,ba,bā — eight
+九,jiu,jiǔ — nine
+十,shi,shí — ten
+百,bai,bǎi — hundred
+千,qian,qiān — thousand
+萬,wan,wàn — ten thousand
+零,ling,líng — zero
+今天,jintian,jīntiān — today
+明天,mingtian,míngtiān — tomorrow
+昨天,zuotian,zuótiān — yesterday
+現在,xianzai,xiànzài — now
+早上,zaoshang,zǎoshang — morning
+中午,zhongwu,zhōngwǔ — noon
+下午,xiawu,xiàwǔ — afternoon
+晚上,wanshang,wǎnshang — evening
+星期,xingqi,xīngqí — week
+禮拜,libai,lǐbài — week (colloquial)
+週末,zhoumo,zhōumò — weekend
+年,nian,nián — year
+時間,shijian,shíjiān — time
+小時,xiaoshi,xiǎoshí — hour
+分鐘,fenzhong,fēnzhōng — minute
+生日,shengri,shēngrì — birthday
+春天,chuntian,chūntiān — spring
+夏天,xiatian,xiàtiān — summer
+秋天,qiutian,qiūtiān — autumn
+冬天,dongtian,dōngtiān — winter
+以前,yiqian,yǐqián — before
+以後,yihou,yǐhòu — after
+每天,meitian,měitiān — every day
+學校,xuexiao,xuéxiào — school
+公司,gongsi,gōngsī — company
+醫院,yiyuan,yīyuàn — hospital
+銀行,yinhang,yínháng — bank
+郵局,youju,yóujú — post office
+公園,gongyuan,gōngyuán — park
+車站,chezhan,chēzhàn — station
+機場,jichang,jīchǎng — airport
+飯店,fandian,fàndiàn — hotel
+餐廳,canting,cāntīng — restaurant
+超市,chaoshi,chāoshì — supermarket
+市場,shichang,shìchǎng — market
+商店,shangdian,shāngdiàn — shop
+夜市,yeshi,yèshì — night market
+便利商店,bianlishangdian,biànlì shāngdiàn — convenience store
+圖書館,tushuguan,túshūguǎn — library
+博物館,bowuguan,bówùguǎn — museum
+教室,jiaoshi,jiàoshì — classroom
+辦公室,bangongshi,bàngōngshì — office
+廁所,cesuo,cèsuǒ — toilet
+廚房,chufang,chúfáng — kitchen
+房間,fangjian,fángjiān — room
+客廳,keting,kètīng — living room
+浴室,yushi,yùshì — bathroom
+陽台,yangtai,yángtái — balcony
+樓上,loushang,lóushàng — upstairs
+樓下,louxia,lóuxià — downstairs
+外面,waimian,wàimiàn — outside
+裡面,limian,lǐmiàn — inside
+附近,fujin,fùjìn — nearby
+地方,difang,dìfāng — place
+城市,chengshi,chéngshì — city
+鄉下,xiangxia,xiāngxià — countryside
+國家,guojia,guójiā — country
+台灣,taiwan,táiwān — Taiwan
+中國,zhongguo,zhōngguó — China
+美國,meiguo,měiguó — USA
+日本,riben,rìběn — Japan
+公車,gongche,gōngchē — bus
+火車,huoche,huǒchē — train
+高鐵,gaotie,gāotiě — high-speed rail
+捷運,jieyun,jiéyùn — MRT / metro
+飛機,feiji,fēijī — airplane
+腳踏車,jiaotache,jiǎotàchē — bicycle
+計程車,jichengche,jìchéngchē — taxi
+船,chuan,chuán — boat
+馬路,malu,mǎlù — road
+路,lu,lù — road / route
+街,jie,jiē — street
+橋,qiao,qiáo — bridge
+地圖,ditu,dìtú — map
+票,piao,piào — ticket
+飯,fan,fàn — rice / meal
+麵,mian,miàn — noodles
+麵包,mianbao,miànbāo — bread
+雞蛋,jidan,jīdàn — egg
+牛肉,niurou,niúròu — beef
+豬肉,zhurou,zhūròu — pork
+雞肉,jirou,jīròu — chicken (meat)
+魚,yu,yú — fish
+蝦,xia,xiā — shrimp
+青菜,qingcai,qīngcài — vegetables
+水果,shuiguo,shuǐguǒ — fruit
+蘋果,pingguo,píngguǒ — apple
+香蕉,xiangjiao,xiāngjiāo — banana
+西瓜,xigua,xīguā — watermelon
+葡萄,putao,pútáo — grape
+草莓,caomei,cǎoméi — strawberry
+橘子,juzi,júzi — tangerine
+芒果,mangguo,mángguǒ — mango
+牛奶,niunai,niúnǎi — milk
+豆漿,doujiang,dòujiāng — soy milk
+咖啡,kafei,kāfēi — coffee
+茶,cha,chá — tea
+水,shui,shuǐ — water
+果汁,guozhi,guǒzhī — juice
+啤酒,pijiu,píjiǔ — beer
+珍珠奶茶,zhenzhunaicha,zhēnzhū nǎichá — bubble tea
+湯,tang,tāng — soup
+糖,tang,táng — sugar
+鹽,yan,yán — salt
+醬油,jiangyou,jiàngyóu — soy sauce
+早餐,zaocan,zǎocān — breakfast
+午餐,wucan,wǔcān — lunch
+晚餐,wancan,wǎncān — dinner
+點心,dianxin,diǎnxīn — snack / dim sum
+蛋糕,dangao,dàngāo — cake
+餅乾,binggan,bǐnggān — cookie
+巧克力,qiaokeli,qiǎokèlì — chocolate
+冰淇淋,bingqilin,bīngqílín — ice cream
+飲料,yinliao,yǐnliào — beverage
+筷子,kuaizi,kuàizi — chopsticks
+碗,wan,wǎn — bowl
+盤子,panzi,pánzi — plate
+杯子,beizi,bēizi — cup
+瓶子,pingzi,píngzi — bottle
+桌子,zhuozi,zhuōzi — table
+椅子,yizi,yǐzi — chair
+床,chuang,chuáng — bed
+門,men,mén — door
+窗戶,chuanghu,chuānghù — window
+鑰匙,yaoshi,yàoshi — key
+手機,shouji,shǒujī — cell phone
+電腦,diannao,diànnǎo — computer
+電視,dianshi,diànshì — TV
+電話,dianhua,diànhuà — telephone
+冰箱,bingxiang,bīngxiāng — fridge
+冷氣,lengqi,lěngqì — air conditioner
+燈,deng,dēng — lamp / light
+電,dian,diàn — electricity
+火,huo,huǒ — fire
+書,shu,shū — book
+筆,bi,bǐ — pen
+紙,zhi,zhǐ — paper
+報紙,baozhi,bàozhǐ — newspaper
+雜誌,zazhi,zázhì — magazine
+字典,zidian,zìdiǎn — dictionary
+照片,zhaopian,zhàopiàn — photo
+錢,qian,qián — money
+錢包,qianbao,qiánbāo — wallet
+信用卡,xinyongka,xìnyòngkǎ — credit card
+護照,huzhao,hùzhào — passport
+行李,xingli,xínglǐ — luggage
+雨傘,yusan,yǔsǎn — umbrella
+眼鏡,yanjing,yǎnjìng — glasses
+衣服,yifu,yīfú — clothes
+褲子,kuzi,kùzi — pants
+裙子,qunzi,qúnzi — skirt
+鞋子,xiezi,xiézi — shoes
+襪子,wazi,wàzi — socks
+帽子,maozi,màozi — hat
+外套,waitao,wàitào — coat
+禮物,liwu,lǐwù — gift
+玩具,wanju,wánjù — toy
+盒子,hezi,hézi — box
+袋子,daizi,dàizi — bag
+毛巾,maojin,máojīn — towel
+肥皂,feizao,féizào — soap
+牙刷,yashua,yáshuā — toothbrush
+牙膏,yagao,yágāo — toothpaste
+藥,yao,yào — medicine
+頭,tou,tóu — head
+眼睛,yanjing,yǎnjīng — eye
+耳朵,erduo,ěrduo — ear
+鼻子,bizi,bízi — nose
+嘴巴,zuiba,zuǐbā — mouth
+手,shou,shǒu — hand
+腳,jiao,jiǎo — foot
+頭髮,toufa,tóufǎ — hair
+肚子,duzi,dùzi — belly
+感冒,ganmao,gǎnmào — a cold
+發燒,fashao,fāshāo — fever
+生病,shengbing,shēngbìng — to be sick
+健康,jiankang,jiànkāng — healthy
+身體,shenti,shēntǐ — body
+天氣,tianqi,tiānqì — weather
+太陽,taiyang,tàiyáng — sun
+月亮,yueliang,yuèliàng — moon
+星星,xingxing,xīngxīng — star
+天空,tiankong,tiānkōng — sky
+雲,yun,yún — cloud
+雨,yu,yǔ — rain
+雪,xue,xuě — snow
+風,feng,fēng — wind
+颱風,taifeng,táifēng — typhoon
+地震,dizhen,dìzhèn — earthquake
+山,shan,shān — mountain
+河,he,hé — river
+海,hai,hǎi — sea
+湖,hu,hú — lake
+樹,shu,shù — tree
+花,hua,huā — flower
+草,cao,cǎo — grass
+石頭,shitou,shítou — stone
+動物,dongwu,dòngwù — animal
+狗,gou,gǒu — dog
+貓,mao,māo — cat
+鳥,niao,niǎo — bird
+馬,ma,mǎ — horse
+牛,niu,niú — cow
+豬,zhu,zhū — pig
+雞,ji,jī — chicken
+兔子,tuzi,tùzi — rabbit
+老虎,laohu,lǎohǔ — tiger
+大象,daxiang,dàxiàng — elephant
+猴子,houzi,hóuzi — monkey
+熊,xiong,xióng — bear
+蛇,she,shé — snake
+吃,chi,chī — to eat
+喝,he,hē — to drink
+看,kan,kàn — to look / watch
+聽,ting,tīng — to listen
+說話,shuohua,shuōhuà — to speak
+讀,du,dú — to read
+寫,xie,xiě — to write
+買,mai,mǎi — to buy
+賣,mai,mài — to sell
+走路,zoulu,zǒulù — to walk
+跑步,paobu,pǎobù — to run
+游泳,youyong,yóuyǒng — to swim
+睡覺,shuijiao,shuìjiào — to sleep
+起床,qichuang,qǐchuáng — to get up
+工作,gongzuo,gōngzuò — work
+上班,shangban,shàngbān — to go to work
+下班,xiaban,xiàbān — to get off work
+上課,shangke,shàngkè — to attend class
+下課,xiake,xiàkè — class is over
+學習,xuexi,xuéxí — to study
+考試,kaoshi,kǎoshì — exam
+開車,kaiche,kāichē — to drive
+開門,kaimen,kāimén — to open the door
+關門,guanmen,guānmén — to close the door
+坐,zuo,zuò — to sit
+站,zhan,zhàn — to stand
+來,lai,lái — to come
+去,qu,qù — to go
+回家,huijia,huíjiā — to go home
+出去,chuqu,chūqù — to go out
+進來,jinlai,jìnlái — to come in
+等,deng,děng — to wait
+找,zhao,zhǎo — to look for
+給,gei,gěi — to give
+拿,na,ná — to take
+放,fang,fàng — to put
+用,yong,yòng — to use
+幫忙,bangmang,bāngmáng — to help
+打電話,dadianhua,dǎ diànhuà — to make a phone call
+唱歌,changge,chànggē — to sing
+跳舞,tiaowu,tiàowǔ — to dance
+畫畫,huahua,huàhuà — to draw
+照相,zhaoxiang,zhàoxiàng — to take photos
+玩,wan,wán — to play
+笑,xiao,xiào — to laugh
+哭,ku,kū — to cry
+愛,ai,ài — to love
+喜歡,xihuan,xǐhuān — to like
+想,xiang,xiǎng — to think / want
+知道,zhidao,zhīdào — to know
+認識,renshi,rènshì — to know (a person)
+記得,jide,jìdé — to remember
+忘記,wangji,wàngjì — to forget
+希望,xiwang,xīwàng — to hope
+需要,xuyao,xūyào — to need
+可以,keyi,kěyǐ — can / may
+會,hui,huì — can / will
+要,yao,yào — to want
+洗澡,xizao,xǐzǎo — to take a bath
+刷牙,shuaya,shuāyá — to brush teeth
+穿,chuan,chuān — to wear
+休息,xiuxi,xiūxí — to rest
+運動,yundong,yùndòng — to exercise
+覺得,juede,juéde — to feel / think
+大,da,dà — big
+小,xiao,xiǎo — small
+多,duo,duō — many
+少,shao,shǎo — few
+好,hao,hǎo — good
+壞,huai,huài — bad
+新,xin,xīn — new
+舊,jiu,jiù — old (things)
+高,gao,gāo — tall / high
+短,duan,duǎn — short
+快,kuai,kuài — fast
+慢,man,màn — slow
+早,zao,zǎo — early
+晚,wan,wǎn — late
+遠,yuan,yuǎn — far
+近,jin,jìn — near
+熱,re,rè — hot
+冷,leng,lěng — cold
+忙,mang,máng — busy
+累,lei,lèi — tired
+餓,e,è — hungry
+渴,ke,kě — thirsty
+貴,gui,guì — expensive
+便宜,pianyi,piányí — cheap
+漂亮,piaoliang,piàoliàng — pretty
+可愛,keai,kě'ài — cute
+開心,kaixin,kāixīn — happy
+快樂,kuaile,kuàilè — happy / joyful
+簡單,jiandan,jiǎndān — simple
+容易,rongyi,róngyì — easy
+顏色,yanse,yánsè — color
+紅色,hongse,hóngsè — red
+藍色,lanse,lánsè — blue
+白色,baise,báisè — white
+黑色,heise,hēisè — black
+東西,dongxi,dōngxi — thing
+事情,shiqing,shìqíng — matter
+問題,wenti,wèntí — question / problem
+名字,mingzi,míngzì — name
+音樂,yinyue,yīnyuè — music
+電影,dianying,diànyǐng — movie
+故事,gushi,gùshì — story
+中文,zhongwen,zhōngwén — Chinese (language)
+世界,shijie,shìjiè — world

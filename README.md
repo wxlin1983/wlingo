@@ -81,7 +81,7 @@ Create a UTF-8 CSV file under `src/vocabulary/`. The filename becomes the topic 
 | Location | Quiz type |
 |---|---|
 | `src/vocabulary/*.csv` | Multiple choice — pick the right `translation` for `word` |
-| `src/vocabulary/spelling/*.csv` | Spelling — type the reading of `word` (e.g. kanji → kana; kana answers get live romaji input) |
+| `src/vocabulary/spelling/*.csv` | Spelling — type the reading of `word` (e.g. kanji → kana, hanzi → pinyin; kana answers get live romaji input) |
 | `src/vocabulary/translation/*.csv` | Translation — type the `translation` of `word` |
 
 **Example: `src/vocabulary/Spanish.csv`**

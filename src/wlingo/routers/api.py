@@ -29,6 +29,12 @@ def _user_stats_key(user_id: str, topic: str) -> str:
     return f"user_stats:{user_id}:{topic}"
 
 
+def _normalize_typed_answer(s: str) -> str:
+    # Case- and whitespace-insensitive: "Ni Hao" matches "nihao" (pinyin
+    # answers may reasonably be typed with or without syllable spaces).
+    return "".join(s.lower().split())
+
+
 @router.get("/api/health")
 def health_check(redis: Redis = Depends(get_redis)):
     try:
@@ -168,7 +174,9 @@ def submit_answer(
         if typed_answer is None or selected_option_index is not None:
             return JSONResponse({"error": "Invalid answer"}, status_code=400)
         user_answer_str = typed_answer.strip()
-        is_correct = user_answer_str.lower() == current_q.translation.strip().lower()
+        is_correct = _normalize_typed_answer(
+            user_answer_str
+        ) == _normalize_typed_answer(current_q.translation)
     else:
         if selected_option_index is None or typed_answer is not None:
             return JSONResponse({"error": "Invalid answer"}, status_code=400)
