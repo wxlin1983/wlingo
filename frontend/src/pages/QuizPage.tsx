@@ -15,7 +15,7 @@ const LANG_MAP: Record<string, string> = {
   English: 'en-US',
   Korean: 'ko-KR',
   Japanese_Kanji: 'ja-JP',
-  Chinese_Spelling: 'zh-CN',
+  Chinese_Translation: 'zh-CN',
 }
 
 export default function QuizPage() {
@@ -192,7 +192,7 @@ export default function QuizPage() {
 
           {/* Options / typed answer */}
           <div className="mb-6">
-            {question.quiz_type === 'spelling' ? (
+            {question.quiz_type !== 'multiple_choice' ? (
               <SpellingInput
                 key={question.word}
                 disabled={!!result || submitting}
@@ -258,7 +258,7 @@ export default function QuizPage() {
 
         {/* Keyboard hint */}
         <p className="text-center text-xs text-gray-400 mt-4">
-          {question.quiz_type === 'spelling' ? (
+          {question.quiz_type !== 'multiple_choice' ? (
             <>
               <strong>Enter</strong> submit/next · <strong>Esc</strong> cancel
             </>

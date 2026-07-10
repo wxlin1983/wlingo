@@ -1,34 +1,109 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { motion } from 'framer-motion'
 import { api } from '../lib/api'
-import type { Topic, SessionInfo } from '../lib/types'
+import type { Topic, SessionInfo, QuizType } from '../lib/types'
 import ModeToggle from '../components/ModeToggle'
 import ResumeCard from '../components/ResumeCard'
 import PageShell from '../components/PageShell'
-import TopicSection from '../components/TopicSection'
+import Spinner from '../components/Spinner'
+import TopicSection, { type SectionAccent } from '../components/TopicSection'
+
+interface SectionDef {
+  quizType: QuizType
+  title: string
+  icon: string
+  description: string
+  accent: SectionAccent
+}
+
+// Tailwind can only see complete literal class strings, so each accent is
+// spelled out in full here rather than built from a color name.
+const SECTIONS: SectionDef[] = [
+  {
+    quizType: 'multiple_choice',
+    title: 'Multiple Choice',
+    icon: '🔤',
+    description: 'Pick the right translation',
+    accent: {
+      chipSelected: 'border-sky-500 bg-sky-50 text-sky-700',
+      iconBg: 'bg-sky-100',
+    },
+  },
+  {
+    quizType: 'spelling',
+    title: 'Spelling Practice',
+    icon: '✏️',
+    description: 'Type the reading of the word',
+    accent: {
+      chipSelected: 'border-emerald-500 bg-emerald-50 text-emerald-700',
+      iconBg: 'bg-emerald-100',
+    },
+  },
+  {
+    quizType: 'translation',
+    title: 'Translation Practice',
+    icon: '🌐',
+    description: 'Type the translation of the word',
+    accent: {
+      chipSelected: 'border-amber-500 bg-amber-50 text-amber-700',
+      iconBg: 'bg-amber-100',
+    },
+  },
+]
+
+// Inline copy of the favicon mark (frontend/public/favicon.svg) so the header
+// works without an extra asset request.
+function Monogram() {
+  return (
+    <svg viewBox="0 0 100 100" aria-hidden="true" className="w-11 h-11 drop-shadow-md">
+      <defs>
+        <linearGradient id="wl-tile" x1="15%" y1="0%" x2="85%" y2="100%">
+          <stop offset="0%" stopColor="#0c4a6e" />
+          <stop offset="100%" stopColor="#062a43" />
+        </linearGradient>
+      </defs>
+      <rect width="100" height="100" rx="22" fill="url(#wl-tile)" />
+      <path
+        d="M22 32 L38 70 L50 44 L62 70 L78 32"
+        fill="none"
+        stroke="#f0f9ff"
+        strokeWidth="10"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path d="M44 44 L56 44 L50 32 Z" fill="#38bdf8" />
+    </svg>
+  )
+}
+
+const fadeUp = {
+  initial: { opacity: 0, y: 14 },
+  animate: { opacity: 1, y: 0 },
+}
 
 export default function StartPage() {
   const [topics, setTopics] = useState<Topic[]>([])
-  const [selectedMcTopic, setSelectedMcTopic] = useState('')
-  const [selectedSpellingTopic, setSelectedSpellingTopic] = useState('')
+  const [topicsLoaded, setTopicsLoaded] = useState(false)
+  const [selected, setSelected] = useState<Partial<Record<QuizType, string>>>({})
   const [mode, setMode] = useState<'adaptive' | 'random'>('adaptive')
   const [session, setSession] = useState<SessionInfo | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const navigate = useNavigate()
 
-  const mcTopics = topics.filter((t) => t.quiz_type === 'multiple_choice')
-  const spellingTopics = topics.filter((t) => t.quiz_type === 'spelling')
-
   useEffect(() => {
     api
       .topics()
       .then((t) => {
         setTopics(t)
-        const mc = t.filter((x) => x.quiz_type === 'multiple_choice')
-        const spelling = t.filter((x) => x.quiz_type === 'spelling')
-        if (mc.length > 0) setSelectedMcTopic(mc[0].id)
-        if (spelling.length > 0) setSelectedSpellingTopic(spelling[0].id)
+        const initial: Partial<Record<QuizType, string>> = {}
+        for (const s of SECTIONS) {
+          const first = t.find((x) => x.quiz_type === s.quizType)
+          if (first) initial[s.quizType] = first.id
+        }
+        setSelected(initial)
+        setTopicsLoaded(true)
       })
       .catch(() => setError('Failed to load topics'))
 
@@ -40,7 +115,7 @@ export default function StartPage() {
       .catch(() => {})
   }, [])
 
-  async function handleStart(topic: string) {
+  async function handleStart(topic?: string) {
     if (!topic) return
     setLoading(true)
     setError('')
@@ -63,38 +138,54 @@ export default function StartPage() {
 
   return (
     <PageShell>
-      <div className="w-full max-w-md">
+      <div className="w-full max-w-md py-6">
         {/* Logo */}
-        <div className="text-center mb-8">
-          <h1 className="text-6xl font-extrabold text-green-500 tracking-tight mb-2">wlingo</h1>
+        <motion.div {...fadeUp} className="flex flex-col items-center mb-8">
+          <div className="flex items-center gap-3 mb-2">
+            <Monogram />
+            <h1 className="text-5xl font-extrabold text-green-500 tracking-tight">wlingo</h1>
+          </div>
           <p className="text-gray-400 text-lg">Choose a topic and start learning!</p>
-        </div>
+        </motion.div>
 
         {/* Resume banner */}
-        {session && <ResumeCard session={session} className="mb-4" />}
+        {session && (
+          <motion.div {...fadeUp} transition={{ delay: 0.05 }}>
+            <ResumeCard session={session} className="mb-4" />
+          </motion.div>
+        )}
 
         {/* Mode selector — shared, applies to whichever section starts a quiz */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 mb-4">
+        <motion.div
+          {...fadeUp}
+          transition={{ delay: 0.1 }}
+          className="bg-white rounded-2xl shadow-lg p-5 mb-4"
+        >
           <ModeToggle value={mode} onChange={setMode} />
-        </div>
+        </motion.div>
+
+        {!topicsLoaded && !error && (
+          <div className="py-10 flex justify-center">
+            <Spinner />
+          </div>
+        )}
 
         <div className="space-y-4">
-          <TopicSection
-            title="Multiple Choice"
-            topics={mcTopics}
-            selectedTopic={selectedMcTopic}
-            onSelectTopic={setSelectedMcTopic}
-            onStart={() => handleStart(selectedMcTopic)}
-            loading={loading}
-          />
-          <TopicSection
-            title="Spelling Practice"
-            topics={spellingTopics}
-            selectedTopic={selectedSpellingTopic}
-            onSelectTopic={setSelectedSpellingTopic}
-            onStart={() => handleStart(selectedSpellingTopic)}
-            loading={loading}
-          />
+          {SECTIONS.map((s, i) => (
+            <motion.div key={s.quizType} {...fadeUp} transition={{ delay: 0.15 + i * 0.07 }}>
+              <TopicSection
+                title={s.title}
+                icon={s.icon}
+                description={s.description}
+                accent={s.accent}
+                topics={topics.filter((t) => t.quiz_type === s.quizType)}
+                selectedTopic={selected[s.quizType] ?? ''}
+                onSelectTopic={(id) => setSelected((prev) => ({ ...prev, [s.quizType]: id }))}
+                onStart={() => handleStart(selected[s.quizType])}
+                loading={loading}
+              />
+            </motion.div>
+          ))}
         </div>
 
         {error && <p className="text-red-500 text-sm text-center mt-4">{error}</p>}

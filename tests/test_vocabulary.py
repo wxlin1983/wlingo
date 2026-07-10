@@ -75,9 +75,27 @@ def test_spelling_topic_appears_in_get_topics_with_quiz_type(tmp_path):
     assert topic["quiz_type"] == "spelling"
 
 
-def test_missing_spelling_subdirectory_is_silently_skipped(tmp_path):
+def test_translation_subdirectory_csv_is_translation_type(tmp_path):
+    translation_dir = tmp_path / "translation"
+    translation_dir.mkdir()
+    (translation_dir / "ChineseWords.csv").write_text("word,translation\n你好,hello\n")
+    vm = VocabularyManager(str(tmp_path))
+    assert "ChineseWords" in vm.vocab_sets
+    assert vm.get_quiz_type("ChineseWords") == "translation"
+
+
+def test_translation_topic_appears_in_get_topics_with_quiz_type(tmp_path):
+    translation_dir = tmp_path / "translation"
+    translation_dir.mkdir()
+    (translation_dir / "ChineseWords.csv").write_text("word,translation\n你好,hello\n")
+    vm = VocabularyManager(str(tmp_path))
+    topic = next(t for t in vm.get_topics() if t["id"] == "ChineseWords")
+    assert topic["quiz_type"] == "translation"
+
+
+def test_missing_typed_subdirectories_are_silently_skipped(tmp_path):
     (tmp_path / "Fruits.csv").write_text("word,translation\napple,苹果\n")
-    # No "spelling" subdirectory exists at all.
+    # Neither a "spelling" nor a "translation" subdirectory exists at all.
     vm = VocabularyManager(str(tmp_path))
     assert "Fruits" in vm.vocab_sets
     assert len(vm.vocab_sets) == 1
@@ -106,11 +124,31 @@ def test_kana_answers_enable_romaji_input(tmp_path):
 def test_latin_answers_do_not_enable_romaji_input(tmp_path):
     spelling_dir = tmp_path / "spelling"
     spelling_dir.mkdir()
-    (spelling_dir / "ChineseSpelling.csv").write_text(
+    (spelling_dir / "LatinSpelling.csv").write_text(
+        "word,translation\nhello,bonjour\nworld,monde\n"
+    )
+    vm = VocabularyManager(str(tmp_path))
+    assert vm.get_romaji_input("LatinSpelling") is False
+
+
+def test_latin_translation_topic_does_not_enable_romaji_input(tmp_path):
+    translation_dir = tmp_path / "translation"
+    translation_dir.mkdir()
+    (translation_dir / "ChineseWords.csv").write_text(
         "word,translation\n你好,hello\n世界,world\n"
     )
     vm = VocabularyManager(str(tmp_path))
-    assert vm.get_romaji_input("ChineseSpelling") is False
+    assert vm.get_romaji_input("ChineseWords") is False
+
+
+def test_kana_translation_topic_enables_romaji_input(tmp_path):
+    translation_dir = tmp_path / "translation"
+    translation_dir.mkdir()
+    (translation_dir / "JapaneseWords.csv").write_text(
+        "word,translation\nhello,こんにちは\nworld,せかい\n"
+    )
+    vm = VocabularyManager(str(tmp_path))
+    assert vm.get_romaji_input("JapaneseWords") is True
 
 
 def test_multiple_choice_topic_never_gets_romaji_input(tmp_path):

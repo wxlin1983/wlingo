@@ -21,7 +21,15 @@ vi.mock('react-router-dom', async (importOriginal) => {
 
 function section(title: string) {
   const heading = screen.getByRole('heading', { name: title })
-  return within(heading.closest('div')!)
+  return within(heading.closest('section')!)
+}
+
+function renderPage() {
+  return render(
+    <MemoryRouter>
+      <StartPage />
+    </MemoryRouter>,
+  )
 }
 
 describe('StartPage', () => {
@@ -30,46 +38,61 @@ describe('StartPage', () => {
     vi.mocked(api.topics).mockResolvedValue([
       { id: 'English', name: 'English', count: 281, quiz_type: 'multiple_choice' },
       { id: 'Korean', name: 'Korean', count: 675, quiz_type: 'multiple_choice' },
-      { id: 'Chinese_Spelling', name: 'Chinese Spelling', count: 281, quiz_type: 'spelling' },
+      {
+        id: 'Chinese_Translation',
+        name: 'Chinese Translation',
+        count: 281,
+        quiz_type: 'translation',
+      },
       { id: 'Japanese_Kanji', name: 'Japanese Kanji', count: 99, quiz_type: 'spelling' },
     ])
     vi.mocked(api.session).mockResolvedValue({ active: false })
   })
 
-  it('separates topics into Multiple Choice and Spelling Practice sections', async () => {
-    render(
-      <MemoryRouter>
-        <StartPage />
-      </MemoryRouter>,
-    )
+  it('separates topics into Multiple Choice, Spelling, and Translation sections', async () => {
+    renderPage()
 
     await waitFor(() => {
-      expect(screen.getByRole('option', { name: /English/ })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /English/ })).toBeInTheDocument()
     })
 
     const mc = section('Multiple Choice')
-    expect(mc.getByRole('option', { name: /English/ })).toBeInTheDocument()
-    expect(mc.getByRole('option', { name: /Korean/ })).toBeInTheDocument()
-    expect(mc.queryByRole('option', { name: /Chinese Spelling/ })).not.toBeInTheDocument()
+    expect(mc.getByRole('button', { name: /English/ })).toBeInTheDocument()
+    expect(mc.getByRole('button', { name: /Korean/ })).toBeInTheDocument()
+    expect(mc.queryByRole('button', { name: /Chinese Translation/ })).not.toBeInTheDocument()
 
     const spelling = section('Spelling Practice')
-    expect(spelling.getByRole('option', { name: /Chinese Spelling/ })).toBeInTheDocument()
-    expect(spelling.getByRole('option', { name: /Japanese Kanji/ })).toBeInTheDocument()
-    expect(spelling.queryByRole('option', { name: /^English/ })).not.toBeInTheDocument()
+    expect(spelling.getByRole('button', { name: /Japanese Kanji/ })).toBeInTheDocument()
+    expect(spelling.queryByRole('button', { name: /Chinese Translation/ })).not.toBeInTheDocument()
+
+    const translation = section('Translation Practice')
+    expect(translation.getByRole('button', { name: /Chinese Translation/ })).toBeInTheDocument()
+    expect(translation.queryByRole('button', { name: /^English/ })).not.toBeInTheDocument()
+  })
+
+  it('hides a section that has no topics', async () => {
+    vi.mocked(api.topics).mockResolvedValue([
+      { id: 'English', name: 'English', count: 281, quiz_type: 'multiple_choice' },
+    ])
+
+    renderPage()
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /English/ })).toBeInTheDocument()
+    })
+
+    expect(screen.queryByRole('heading', { name: 'Spelling Practice' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Translation Practice' })).not.toBeInTheDocument()
   })
 
   it('starts a multiple-choice quiz from the Multiple Choice section', async () => {
     const user = userEvent.setup()
     vi.mocked(api.start).mockResolvedValue({ type: 'opaqueredirect' } as Response)
 
-    render(
-      <MemoryRouter>
-        <StartPage />
-      </MemoryRouter>,
-    )
+    renderPage()
 
     await waitFor(() => {
-      expect(screen.getByRole('option', { name: /English/ })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /English/ })).toBeInTheDocument()
     })
 
     await user.click(section('Multiple Choice').getByRole('button', { name: /start quiz/i }))
@@ -80,24 +103,59 @@ describe('StartPage', () => {
     })
   })
 
+  it('starts the quiz for a newly selected topic chip', async () => {
+    const user = userEvent.setup()
+    vi.mocked(api.start).mockResolvedValue({ type: 'opaqueredirect' } as Response)
+
+    renderPage()
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Korean/ })).toBeInTheDocument()
+    })
+
+    const mc = section('Multiple Choice')
+    await user.click(mc.getByRole('button', { name: /Korean/ }))
+    expect(mc.getByRole('button', { name: /Korean/ })).toHaveAttribute('aria-pressed', 'true')
+
+    await user.click(mc.getByRole('button', { name: /start quiz/i }))
+
+    await waitFor(() => {
+      expect(api.start).toHaveBeenCalledWith('Korean', 'adaptive')
+    })
+  })
+
   it('starts a spelling quiz from the Spelling Practice section', async () => {
     const user = userEvent.setup()
     vi.mocked(api.start).mockResolvedValue({ type: 'opaqueredirect' } as Response)
 
-    render(
-      <MemoryRouter>
-        <StartPage />
-      </MemoryRouter>,
-    )
+    renderPage()
 
     await waitFor(() => {
-      expect(screen.getByRole('option', { name: /Chinese Spelling/ })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /Japanese Kanji/ })).toBeInTheDocument()
     })
 
     await user.click(section('Spelling Practice').getByRole('button', { name: /start quiz/i }))
 
     await waitFor(() => {
-      expect(api.start).toHaveBeenCalledWith('Chinese_Spelling', 'adaptive')
+      expect(api.start).toHaveBeenCalledWith('Japanese_Kanji', 'adaptive')
+      expect(navigateMock).toHaveBeenCalledWith('/quiz/0')
+    })
+  })
+
+  it('starts a translation quiz from the Translation Practice section', async () => {
+    const user = userEvent.setup()
+    vi.mocked(api.start).mockResolvedValue({ type: 'opaqueredirect' } as Response)
+
+    renderPage()
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Chinese Translation/ })).toBeInTheDocument()
+    })
+
+    await user.click(section('Translation Practice').getByRole('button', { name: /start quiz/i }))
+
+    await waitFor(() => {
+      expect(api.start).toHaveBeenCalledWith('Chinese_Translation', 'adaptive')
       expect(navigateMock).toHaveBeenCalledWith('/quiz/0')
     })
   })
@@ -110,14 +168,10 @@ describe('StartPage', () => {
       json: () => Promise.resolve({ detail: 'Unknown topic' }),
     } as unknown as Response)
 
-    render(
-      <MemoryRouter>
-        <StartPage />
-      </MemoryRouter>,
-    )
+    renderPage()
 
     await waitFor(() => {
-      expect(screen.getByRole('option', { name: /English/ })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /English/ })).toBeInTheDocument()
     })
 
     await user.click(section('Multiple Choice').getByRole('button', { name: /start quiz/i }))

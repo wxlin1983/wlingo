@@ -206,11 +206,11 @@ def test_get_question_api_kana_spelling_topic_has_romaji_input_true(client):
     assert data["romaji_input"] is True
 
 
-def test_get_question_api_latin_spelling_topic_has_romaji_input_false(client):
+def test_get_question_api_translation_topic_has_romaji_input_false(client):
     c, _ = client
-    _start(c, "Chinese_Spelling")
+    _start(c, "Chinese_Translation")
     data = c.get("/api/quiz/0").json()
-    assert data["quiz_type"] == "spelling"
+    assert data["quiz_type"] == "translation"
     assert data["romaji_input"] is False
 
 
@@ -456,6 +456,34 @@ def test_submit_typed_answer_preserves_original_case_in_record(client):
     )
     # Trimmed, but not lowercased -- shows exactly what the user typed.
     assert resp.json()["user_answer"] == "Bonjour"
+
+
+def test_submit_typed_answer_on_translation_question(client):
+    """Translation questions use the same typed-answer flow as spelling."""
+    c, fake_redis = client
+    q = Question(
+        word="你好",
+        translation="hello",
+        options=[],
+        quiz_type="translation",
+    )
+    session = SessionData(
+        prepared_questions=[q],
+        correct_count=0,
+        total_questions=1,
+        answers=[],
+        created_at=datetime.now(UTC),
+        topic="Chinese_Translation",
+        mode="adaptive",
+        quiz_type="translation",
+    )
+    session_id = str(uuid.uuid4())
+    fake_redis.set(session_key(session_id), session.model_dump_json())
+    c.cookies.set(settings.SESSION_COOKIE_NAME, session_id)
+
+    resp = c.post("/submit_answer", data={"typed_answer": "hello", "current_index": 0})
+    assert resp.status_code == 200
+    assert resp.json()["is_correct"] is True
 
 
 def test_submit_option_index_on_spelling_question_returns_400(client):

@@ -41,11 +41,14 @@ class VocabularyManager:
             logger.warning(f"Created directory {self.directory}. Please add CSV files.")
             return
 
-        # Multiple-choice topics live at the top level; spelling (typed-answer)
-        # topics live in a "spelling" subdirectory. The subdirectory is never
-        # auto-created — it's simply absent (and skipped) until someone adds one.
+        # Multiple-choice topics live at the top level; typed-answer topics
+        # live in subdirectories named after their quiz type: "spelling"
+        # (type the reading of a word) and "translation" (type the word's
+        # translation). Subdirectories are never auto-created — they're simply
+        # absent (and skipped) until someone adds one.
         self._load_dir(self.directory, "multiple_choice")
         self._load_dir(os.path.join(self.directory, "spelling"), "spelling")
+        self._load_dir(os.path.join(self.directory, "translation"), "translation")
 
         if not self.vocab_sets:
             logger.warning("No CSV files found. Loading dummy data.")
@@ -71,7 +74,9 @@ class VocabularyManager:
                     continue
                 self.vocab_sets[file_name] = records
                 self.topic_types[file_name] = quiz_type
-                if quiz_type == "spelling":
+                if quiz_type != "multiple_choice":
+                    # Typed-answer topics get live romaji→kana conversion
+                    # whenever the expected answers are kana.
                     self.romaji_input[file_name] = _is_kana_topic(records)
                 logger.info(f"Loaded {len(records)} words from {file_name}")
             except Exception as e:

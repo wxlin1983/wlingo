@@ -101,7 +101,7 @@ describe('QuizPage', () => {
 describe('QuizPage spelling mode', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(api.session).mockResolvedValue({ active: true, topic: 'Chinese_Spelling' })
+    vi.mocked(api.session).mockResolvedValue({ active: true, topic: 'Japanese_Kanji' })
     vi.mocked(api.question).mockResolvedValue(SPELLING_QUESTION)
   })
 
@@ -148,6 +148,29 @@ describe('QuizPage spelling mode', () => {
     expect(speakSpy).not.toHaveBeenCalled()
 
     vi.unstubAllGlobals()
+  })
+})
+
+describe('QuizPage translation mode', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(api.session).mockResolvedValue({ active: true, topic: 'Chinese_Translation' })
+    vi.mocked(api.question).mockResolvedValue({
+      word: '你好',
+      options: [],
+      quiz_type: 'translation',
+      romaji_input: false,
+      current_index: 0,
+      total_questions: 5,
+      answer_record: null,
+    })
+  })
+
+  it('renders the typed-answer input like spelling mode', async () => {
+    renderAtIndex('0')
+    expect(await screen.findByText('你好')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText(/type your answer/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^submit$/i })).toBeInTheDocument()
   })
 })
 

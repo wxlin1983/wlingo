@@ -164,7 +164,7 @@ def submit_answer(
 
     current_q = session_data.prepared_questions[current_index]
 
-    if current_q.quiz_type == "spelling":
+    if current_q.quiz_type != "multiple_choice":
         if typed_answer is None or selected_option_index is not None:
             return JSONResponse({"error": "Invalid answer"}, status_code=400)
         user_answer_str = typed_answer.strip()

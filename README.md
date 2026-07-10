@@ -8,10 +8,11 @@ A web-based quiz application for learning vocabulary. FastAPI + Redis backend, R
 
 ## Features
 
-- **Vocabulary quizzes** — multiple-choice questions drawn from CSV word lists
+- **Three quiz types** — multiple choice (pick the right translation), spelling practice (type the reading of a word, e.g. kanji → kana), and translation practice (type the word's translation)
 - **Adaptive mode** — questions are weighted toward words you've previously missed
+- **Romaji input** — typed-answer topics with kana answers convert romaji to kana live as you type
 - **Keyboard shortcuts** — `1`–`4` to select an answer, `Enter` to advance, `S` to hear the word spoken aloud
-- **Text-to-speech** — pronunciation support for English and Korean
+- **Text-to-speech** — pronunciation support for English, Korean, Japanese, and Chinese
 - **Learner notes** — wrong answers surface a short explanation of the word in the results review
 - **Add your own topics** — drop a CSV file in `src/vocabulary/` and it's available on next start
 - **REST API** — all quiz data accessible via JSON endpoints
@@ -75,7 +76,13 @@ Both suites also run in CI (`.github/workflows/ci.yml`) on every push/PR, and th
 
 ## Adding Vocabulary Topics
 
-Create a UTF-8 CSV file in `src/vocabulary/`. The filename becomes the topic name.
+Create a UTF-8 CSV file under `src/vocabulary/`. The filename becomes the topic name, and the directory decides the quiz type:
+
+| Location | Quiz type |
+|---|---|
+| `src/vocabulary/*.csv` | Multiple choice — pick the right `translation` for `word` |
+| `src/vocabulary/spelling/*.csv` | Spelling — type the reading of `word` (e.g. kanji → kana; kana answers get live romaji input) |
+| `src/vocabulary/translation/*.csv` | Translation — type the `translation` of `word` |
 
 **Example: `src/vocabulary/Spanish.csv`**
 

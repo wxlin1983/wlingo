@@ -9,39 +9,29 @@ const modes: { value: 'adaptive' | 'random'; label: string; desc: string }[] = [
 ]
 
 export default function ModeToggle({ value, onChange }: Props) {
+  const active = modes.find((m) => m.value === value) ?? modes[0]
+
   return (
     <div>
-      <label className="block text-sm font-semibold text-gray-600 mb-2">Quiz Mode</label>
-      <div className="flex gap-3">
+      <div className="flex items-baseline justify-between mb-2">
+        <span className="text-sm font-semibold text-gray-600">Quiz Mode</span>
+        <span className="text-xs text-gray-400">{active.desc}</span>
+      </div>
+      <div className="flex bg-gray-100 rounded-xl p-1" role="radiogroup" aria-label="Quiz mode">
         {modes.map((m) => {
-          const active = value === m.value
+          const isActive = value === m.value
           return (
-            <label
+            <button
               key={m.value}
-              className={`flex-1 flex items-center gap-3 px-4 py-3 rounded-xl border-2 cursor-pointer transition-all select-none ${
-                active ? 'border-sky-500 bg-sky-50' : 'border-gray-200 hover:border-gray-300'
+              role="radio"
+              aria-checked={isActive}
+              onClick={() => onChange(m.value)}
+              className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${
+                isActive ? 'bg-white shadow text-sky-700' : 'text-gray-400 hover:text-gray-600'
               }`}
             >
-              <input
-                type="radio"
-                name="mode"
-                value={m.value}
-                checked={active}
-                onChange={() => onChange(m.value)}
-                className="sr-only"
-              />
-              <span
-                className={`w-4 h-4 rounded-full border-2 flex-shrink-0 transition-colors ${
-                  active ? 'border-sky-500 bg-sky-500' : 'border-gray-300 bg-white'
-                }`}
-              />
-              <div>
-                <p className={`text-sm font-semibold ${active ? 'text-sky-700' : 'text-gray-700'}`}>
-                  {m.label}
-                </p>
-                <p className="text-xs text-gray-400">{m.desc}</p>
-              </div>
-            </label>
+              {m.label}
+            </button>
           )
         })}
       </div>

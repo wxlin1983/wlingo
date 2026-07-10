@@ -52,10 +52,12 @@ App is available at **http://localhost:8002**. Vite dev server at **http://local
 
 The React SPA lives in `frontend/`. Stack: React 18 + TypeScript, Vite, Tailwind CSS v3, Framer Motion, React Router v6.
 
+**Quiz types** — `multiple_choice` renders option buttons; `spelling` and `translation` share the typed-answer flow (`SpellingInput`). Anything that isn't `multiple_choice` must be treated as typed — check `quiz_type !== 'multiple_choice'` rather than enumerating the typed types.
+
 **Root-path handling** — the app defaults to serving from `/` (Docker Compose and the Dockerfile both leave `VITE_ROOT_PATH`/`ROOT_PATH` unset). If you deploy it under a path prefix on a shared domain (e.g. `example.com/wlingo`), set `VITE_ROOT_PATH=/wlingo` at frontend build time and `ROOT_PATH=/wlingo` on the running container — but note the reverse proxy must also strip that prefix before forwarding to the backend, since FastAPI's `root_path` only affects URL generation, not route matching. This controls Vite's `base` for asset URLs, React Router's `basename`, and all API call prefixes in `api.ts`.
 
 Pages:
-- `StartPage` — topic selector, adaptive/random mode toggle, resume-session banner
+- `StartPage` — three category sections (Multiple Choice / Spelling / Translation) with topic chips, segmented adaptive/random mode toggle, resume-session banner
 - `QuizPage` — progress bar, word card, animated option buttons, keyboard shortcuts (1–4 / Enter / S / Esc)
 - `ResultPage` — SVG score ring with CSS animation, scrollable answer review
 
@@ -118,7 +120,7 @@ Adaptive weighting: wrong answers increment a counter in `user_stats`. On `/star
 
 ### Vocabulary topics
 
-`VocabularyManager` scans `src/vocabulary/*.csv` at startup. Each CSV must have `word` and `translation` columns; an optional `explanation` column is shown on wrong answers (see `scripts/generate_explanations.py` to backfill it via the Claude API). The filename (without extension) becomes the topic ID. `POST /api/admin/reload-vocab` triggers a hot reload without restarting the server — it requires an `X-Admin-Token` header matching `settings.ADMIN_TOKEN` (unset by default, which denies all requests). Because the production image runs multiple uvicorn workers (each with its own in-process `vocab_manager`), the reload endpoint bumps a `vocab_version` counter in Redis; every worker compares its local version against it on vocab-reading requests and lazily reloads when stale.
+`VocabularyManager` scans `src/vocabulary/` at startup. Top-level `*.csv` files become multiple-choice topics; typed-answer topics live in subdirectories named after their quiz type: `spelling/` (type the reading of a word, e.g. kanji → kana) and `translation/` (type the word's translation, e.g. Chinese → English). Each CSV must have `word` and `translation` columns; an optional `explanation` column is shown on wrong answers (see `scripts/generate_explanations.py` to backfill it via the Claude API). The filename (without extension) becomes the topic ID. `POST /api/admin/reload-vocab` triggers a hot reload without restarting the server — it requires an `X-Admin-Token` header matching `settings.ADMIN_TOKEN` (unset by default, which denies all requests). Because the production image runs multiple uvicorn workers (each with its own in-process `vocab_manager`), the reload endpoint bumps a `vocab_version` counter in Redis; every worker compares its local version against it on vocab-reading requests and lazily reloads when stale.
 
 ### Testing
 

@@ -1,4 +1,4 @@
-export type QuizType = 'multiple_choice' | 'spelling'
+export type QuizType = 'multiple_choice' | 'spelling' | 'translation'
 
 export interface Topic {
   id: string

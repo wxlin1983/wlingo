@@ -4,7 +4,7 @@ from typing import Literal, TypedDict
 
 from pydantic import AwareDatetime, BaseModel
 
-QuizType = Literal["multiple_choice", "spelling"]
+QuizType = Literal["multiple_choice", "spelling", "translation"]
 
 
 class Word(TypedDict):

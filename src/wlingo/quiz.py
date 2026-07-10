@@ -36,14 +36,16 @@ class RandomQuizGenerator:
         else:
             selected_words = random.sample(word_list, count)
 
-        if quiz_type == "spelling":
+        if quiz_type != "multiple_choice":
+            # Typed-answer types (spelling, translation) share one flow;
+            # quiz_type is passed through so the frontend can label them.
             return [
                 Question(
                     word=item["word"],
                     translation=item["translation"],
                     options=[],
                     explanation=item.get("explanation", ""),
-                    quiz_type="spelling",
+                    quiz_type=quiz_type,
                     romaji_input=romaji_input,
                 )
                 for item in selected_words
