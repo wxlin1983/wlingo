@@ -154,7 +154,7 @@ describe('QuizPage spelling mode', () => {
 describe('QuizPage translation mode', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(api.session).mockResolvedValue({ active: true, topic: 'Chinese_Translation' })
+    vi.mocked(api.session).mockResolvedValue({ active: true, topic: 'Chinese_to_English' })
     vi.mocked(api.question).mockResolvedValue({
       word: '你好',
       options: [],

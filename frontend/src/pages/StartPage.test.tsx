@@ -39,8 +39,8 @@ describe('StartPage', () => {
       { id: 'English', name: 'English', count: 281, quiz_type: 'multiple_choice' },
       { id: 'Korean', name: 'Korean', count: 675, quiz_type: 'multiple_choice' },
       {
-        id: 'Chinese_Translation',
-        name: 'Chinese Translation',
+        id: 'Chinese_to_English',
+        name: 'Chinese To English',
         count: 281,
         quiz_type: 'translation',
       },
@@ -53,20 +53,20 @@ describe('StartPage', () => {
     renderPage()
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /English/ })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /^English/ })).toBeInTheDocument()
     })
 
     const mc = section('Multiple Choice')
-    expect(mc.getByRole('button', { name: /English/ })).toBeInTheDocument()
+    expect(mc.getByRole('button', { name: /^English/ })).toBeInTheDocument()
     expect(mc.getByRole('button', { name: /Korean/ })).toBeInTheDocument()
-    expect(mc.queryByRole('button', { name: /Chinese Translation/ })).not.toBeInTheDocument()
+    expect(mc.queryByRole('button', { name: /Chinese To English/ })).not.toBeInTheDocument()
 
     const spelling = section('Spelling Practice')
     expect(spelling.getByRole('button', { name: /Japanese Kanji/ })).toBeInTheDocument()
-    expect(spelling.queryByRole('button', { name: /Chinese Translation/ })).not.toBeInTheDocument()
+    expect(spelling.queryByRole('button', { name: /Chinese To English/ })).not.toBeInTheDocument()
 
     const translation = section('Translation Practice')
-    expect(translation.getByRole('button', { name: /Chinese Translation/ })).toBeInTheDocument()
+    expect(translation.getByRole('button', { name: /Chinese To English/ })).toBeInTheDocument()
     expect(translation.queryByRole('button', { name: /^English/ })).not.toBeInTheDocument()
   })
 
@@ -78,7 +78,7 @@ describe('StartPage', () => {
     renderPage()
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /English/ })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /^English/ })).toBeInTheDocument()
     })
 
     expect(screen.queryByRole('heading', { name: 'Spelling Practice' })).not.toBeInTheDocument()
@@ -92,7 +92,7 @@ describe('StartPage', () => {
     renderPage()
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /English/ })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /^English/ })).toBeInTheDocument()
     })
 
     await user.click(section('Multiple Choice').getByRole('button', { name: /start quiz/i }))
@@ -149,13 +149,13 @@ describe('StartPage', () => {
     renderPage()
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /Chinese Translation/ })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /Chinese To English/ })).toBeInTheDocument()
     })
 
     await user.click(section('Translation Practice').getByRole('button', { name: /start quiz/i }))
 
     await waitFor(() => {
-      expect(api.start).toHaveBeenCalledWith('Chinese_Translation', 'adaptive')
+      expect(api.start).toHaveBeenCalledWith('Chinese_to_English', 'adaptive')
       expect(navigateMock).toHaveBeenCalledWith('/quiz/0')
     })
   })
@@ -171,7 +171,7 @@ describe('StartPage', () => {
     renderPage()
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /English/ })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /^English/ })).toBeInTheDocument()
     })
 
     await user.click(section('Multiple Choice').getByRole('button', { name: /start quiz/i }))

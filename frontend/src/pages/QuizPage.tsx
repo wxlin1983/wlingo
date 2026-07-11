@@ -15,7 +15,7 @@ const LANG_MAP: Record<string, string> = {
   English: 'en-US',
   Korean: 'ko-KR',
   Japanese_Kanji: 'ja-JP',
-  Chinese_Translation: 'zh-TW',
+  Chinese_to_English: 'zh-TW',
   Chinese_Pinyin: 'zh-TW',
 }
 

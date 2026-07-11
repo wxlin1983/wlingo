@@ -208,7 +208,7 @@ def test_get_question_api_kana_spelling_topic_has_romaji_input_true(client):
 
 def test_get_question_api_translation_topic_has_romaji_input_false(client):
     c, _ = client
-    _start(c, "Chinese_Translation")
+    _start(c, "Chinese_to_English")
     data = c.get("/api/quiz/0").json()
     assert data["quiz_type"] == "translation"
     assert data["romaji_input"] is False
@@ -483,7 +483,7 @@ def test_submit_typed_answer_on_translation_question(client):
         total_questions=1,
         answers=[],
         created_at=datetime.now(UTC),
-        topic="Chinese_Translation",
+        topic="Chinese_to_English",
         mode="adaptive",
         quiz_type="translation",
     )
