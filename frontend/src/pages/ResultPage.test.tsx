@@ -48,7 +48,7 @@ describe('ResultPage', () => {
     vi.mocked(api.reset).mockResolvedValue({ status: 'success' })
   })
 
-  it('shows the score and answer review, then resets on demand', async () => {
+  it('shows wrong answers up front with correct ones collapsed, then resets on demand', async () => {
     const user = userEvent.setup()
 
     render(
@@ -58,13 +58,58 @@ describe('ResultPage', () => {
     )
 
     expect(await screen.findByText('1 of 2 correct')).toBeInTheDocument()
-    expect(screen.getByText('hello')).toBeInTheDocument()
+    // The wrong answer and its explanation are visible immediately…
+    expect(screen.getByText('goodbye')).toBeInTheDocument()
     expect(screen.getByText('Common greeting mix-up.')).toBeInTheDocument()
+    // …but the correct answer is tucked away until the accordion is opened.
+    expect(screen.queryByText('hello')).not.toBeInTheDocument()
+
+    const accordion = screen.getByRole('button', { name: /correct answers \(1\)/i })
+    expect(accordion).toHaveAttribute('aria-expanded', 'false')
+    await user.click(accordion)
+    expect(accordion).toHaveAttribute('aria-expanded', 'true')
+    expect(await screen.findByText('hello')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: /start new quiz/i }))
 
     expect(api.reset).toHaveBeenCalled()
     expect(navigateMock).toHaveBeenCalledWith('/')
+  })
+
+  it('omits the accordion when every answer is wrong', async () => {
+    vi.mocked(api.result).mockResolvedValue({
+      correct_count: 0,
+      total_questions: 1,
+      score_percentage: 0,
+      answers: [RESULT.answers[1]],
+    })
+
+    render(
+      <MemoryRouter>
+        <ResultPage />
+      </MemoryRouter>,
+    )
+
+    expect(await screen.findByText('goodbye')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /correct answers/i })).not.toBeInTheDocument()
+  })
+
+  it('shows a perfect-score message when every answer is correct', async () => {
+    vi.mocked(api.result).mockResolvedValue({
+      correct_count: 1,
+      total_questions: 1,
+      score_percentage: 100,
+      answers: [RESULT.answers[0]],
+    })
+
+    render(
+      <MemoryRouter>
+        <ResultPage />
+      </MemoryRouter>,
+    )
+
+    expect(await screen.findByText(/nothing to review/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /correct answers \(1\)/i })).toBeInTheDocument()
   })
 
   it('redirects home if the result fails to load', async () => {
