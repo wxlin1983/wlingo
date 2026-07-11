@@ -29,6 +29,7 @@ class RandomQuizGenerator:
 
         quiz_type = self.vocab_manager.get_quiz_type(topic)
         romaji_input = self.vocab_manager.get_romaji_input(topic)
+        hangul_input = self.vocab_manager.get_hangul_input(topic)
 
         count = min(count, len(word_list))
         if word_weights:
@@ -47,6 +48,7 @@ class RandomQuizGenerator:
                     explanation=item.get("explanation", ""),
                     quiz_type=quiz_type,
                     romaji_input=romaji_input,
+                    hangul_input=hangul_input,
                 )
                 for item in selected_words
             ]

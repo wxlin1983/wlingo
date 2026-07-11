@@ -196,6 +196,7 @@ def test_get_question_api_multiple_choice_has_romaji_input_false(client):
     _start(c, "English")
     data = c.get("/api/quiz/0").json()
     assert data["romaji_input"] is False
+    assert data["hangul_input"] is False
 
 
 def test_get_question_api_kana_spelling_topic_has_romaji_input_true(client):
@@ -211,6 +212,15 @@ def test_get_question_api_translation_topic_has_romaji_input_false(client):
     _start(c, "Chinese_to_English")
     data = c.get("/api/quiz/0").json()
     assert data["quiz_type"] == "translation"
+    assert data["romaji_input"] is False
+
+
+def test_get_question_api_korean_translation_topic_has_hangul_input_true(client):
+    c, _ = client
+    _start(c, "Japanese_to_Korean")
+    data = c.get("/api/quiz/0").json()
+    assert data["quiz_type"] == "translation"
+    assert data["hangul_input"] is True
     assert data["romaji_input"] is False
 
 

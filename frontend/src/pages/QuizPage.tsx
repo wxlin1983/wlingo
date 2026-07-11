@@ -17,6 +17,7 @@ const LANG_MAP: Record<string, string> = {
   Japanese_Kanji: 'ja-JP',
   Chinese_to_English: 'zh-TW',
   Chinese_Pinyin: 'zh-TW',
+  Japanese_to_Korean: 'ja-JP',
 }
 
 export default function QuizPage() {
@@ -199,6 +200,7 @@ export default function QuizPage() {
                 disabled={!!result || submitting}
                 correct={result ? result.is_correct : undefined}
                 romajiInput={question.romaji_input}
+                hangulInput={question.hangul_input}
                 onSubmit={handleTypedSubmit}
               />
             ) : (

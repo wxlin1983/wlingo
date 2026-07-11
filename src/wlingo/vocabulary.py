@@ -9,16 +9,32 @@ from .models import Topic, Word
 logger = logging.getLogger(__name__)
 
 _KANA_PATTERN = re.compile(r"[぀-ヿ]")  # hiragana + katakana
+_HANGUL_PATTERN = re.compile(r"[가-힣]")  # Hangul syllables
+
+
+def _majority_script(records: list[Word], pattern: re.Pattern[str]) -> bool:
+    """True if more than half of a topic's answer keys (translations) match
+    the given script pattern. Used to decide whether the frontend should
+    offer a script-specific live-conversion input (romaji->kana,
+    2-beolsik->Hangul, ...)."""
+    if not records:
+        return False
+    match_count = sum(1 for r in records if pattern.search(r["translation"]))
+    return match_count > len(records) / 2
 
 
 def _is_kana_topic(records: list[Word]) -> bool:
-    """True if most of a topic's answer keys (translations) contain kana
-    characters. Used to decide whether the frontend should offer live
-    romaji-to-kana conversion in the spelling-answer input."""
-    if not records:
-        return False
-    kana_count = sum(1 for r in records if _KANA_PATTERN.search(r["translation"]))
-    return kana_count > len(records) / 2
+    """True if most of a topic's translations are Japanese kana. Used to
+    decide whether the frontend should offer live romaji-to-kana conversion
+    in the spelling-answer input."""
+    return _majority_script(records, _KANA_PATTERN)
+
+
+def _is_hangul_topic(records: list[Word]) -> bool:
+    """True if most of a topic's translations are Korean Hangul. Used to
+    decide whether the frontend should offer live 2-beolsik-to-Hangul
+    conversion in the spelling-answer input."""
+    return _majority_script(records, _HANGUL_PATTERN)
 
 
 # --- Service Layer: Vocabulary Management ---
@@ -30,12 +46,14 @@ class VocabularyManager:
         self.vocab_sets: dict[str, list[Word]] = {}
         self.topic_types: dict[str, str] = {}
         self.romaji_input: dict[str, bool] = {}
+        self.hangul_input: dict[str, bool] = {}
         self.load_all()
 
     def load_all(self) -> None:
         self.vocab_sets = {}
         self.topic_types = {}
         self.romaji_input = {}
+        self.hangul_input = {}
         if not os.path.exists(self.directory):
             os.makedirs(self.directory)
             logger.warning(f"Created directory {self.directory}. Please add CSV files.")
@@ -75,9 +93,11 @@ class VocabularyManager:
                 self.vocab_sets[file_name] = records
                 self.topic_types[file_name] = quiz_type
                 if quiz_type != "multiple_choice":
-                    # Typed-answer topics get live romaji→kana conversion
-                    # whenever the expected answers are kana.
+                    # Typed-answer topics get live script-specific conversion
+                    # (romaji→kana or 2-beolsik→Hangul) whenever the expected
+                    # answers are written in that script.
                     self.romaji_input[file_name] = _is_kana_topic(records)
+                    self.hangul_input[file_name] = _is_hangul_topic(records)
                 logger.info(f"Loaded {len(records)} words from {file_name}")
             except Exception as e:
                 logger.error(f"Failed to load {file_path}: {e}")
@@ -118,6 +138,9 @@ class VocabularyManager:
 
     def get_romaji_input(self, topic: str) -> bool:
         return self.romaji_input.get(topic, False)
+
+    def get_hangul_input(self, topic: str) -> bool:
+        return self.hangul_input.get(topic, False)
 
     def get_topics(self) -> list[Topic]:
         topics: list[Topic] = []

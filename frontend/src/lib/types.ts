@@ -20,6 +20,7 @@ export interface Question {
   options: string[]
   quiz_type: QuizType
   romaji_input: boolean
+  hangul_input: boolean
   current_index: number
   total_questions: number
   answer_record: AnswerRecord | null

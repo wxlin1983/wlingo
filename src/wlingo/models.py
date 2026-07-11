@@ -28,6 +28,7 @@ class Question(BaseModel):
     explanation: str = ""
     quiz_type: str = "multiple_choice"
     romaji_input: bool = False
+    hangul_input: bool = False
 
 
 class AnswerRecord(BaseModel):

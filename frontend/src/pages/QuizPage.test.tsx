@@ -26,6 +26,7 @@ const QUESTION: Question = {
   options: ['你好', '再見', '謝謝', '對不起'],
   quiz_type: 'multiple_choice',
   romaji_input: false,
+  hangul_input: false,
   current_index: 0,
   total_questions: 5,
   answer_record: null,
@@ -36,6 +37,7 @@ const SPELLING_QUESTION: Question = {
   options: [],
   quiz_type: 'spelling',
   romaji_input: false,
+  hangul_input: false,
   current_index: 0,
   total_questions: 5,
   answer_record: null,
@@ -46,6 +48,18 @@ const KANA_SPELLING_QUESTION: Question = {
   options: [],
   quiz_type: 'spelling',
   romaji_input: true,
+  hangul_input: false,
+  current_index: 0,
+  total_questions: 5,
+  answer_record: null,
+}
+
+const HANGUL_TRANSLATION_QUESTION: Question = {
+  word: 'こんにちは',
+  options: [],
+  quiz_type: 'translation',
+  romaji_input: false,
+  hangul_input: true,
   current_index: 0,
   total_questions: 5,
   answer_record: null,
@@ -160,6 +174,7 @@ describe('QuizPage translation mode', () => {
       options: [],
       quiz_type: 'translation',
       romaji_input: false,
+      hangul_input: false,
       current_index: 0,
       total_questions: 5,
       answer_record: null,
@@ -185,5 +200,19 @@ describe('QuizPage kana spelling mode', () => {
     renderAtIndex('0')
     expect(await screen.findByText('漢字')).toBeInTheDocument()
     expect(screen.getByPlaceholderText(/type romaji/i)).toBeInTheDocument()
+  })
+})
+
+describe('QuizPage hangul translation mode', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(api.session).mockResolvedValue({ active: true, topic: 'Japanese_to_Korean' })
+    vi.mocked(api.question).mockResolvedValue(HANGUL_TRANSLATION_QUESTION)
+  })
+
+  it('renders a 2-beolsik input placeholder for hangul translation topics', async () => {
+    renderAtIndex('0')
+    expect(await screen.findByText('こんにちは')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText(/english keyboard/i)).toBeInTheDocument()
   })
 })

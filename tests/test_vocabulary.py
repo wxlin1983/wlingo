@@ -166,6 +166,56 @@ def test_get_romaji_input_unknown_topic_defaults_to_false(tmp_path):
 
 
 # ---------------------------------------------------------------------------
+# Hangul input detection
+# ---------------------------------------------------------------------------
+
+
+def test_hangul_answers_enable_hangul_input(tmp_path):
+    translation_dir = tmp_path / "translation"
+    translation_dir.mkdir()
+    (translation_dir / "KoreanWords.csv").write_text(
+        "word,translation\nこんにちは,안녕하세요\n猫,고양이\n"
+    )
+    vm = VocabularyManager(str(tmp_path))
+    assert vm.get_hangul_input("KoreanWords") is True
+
+
+def test_latin_answers_do_not_enable_hangul_input(tmp_path):
+    spelling_dir = tmp_path / "spelling"
+    spelling_dir.mkdir()
+    (spelling_dir / "LatinSpelling.csv").write_text(
+        "word,translation\nhello,bonjour\nworld,monde\n"
+    )
+    vm = VocabularyManager(str(tmp_path))
+    assert vm.get_hangul_input("LatinSpelling") is False
+
+
+def test_kana_topic_does_not_enable_hangul_input(tmp_path):
+    spelling_dir = tmp_path / "spelling"
+    spelling_dir.mkdir()
+    (spelling_dir / "KanjiKana.csv").write_text(
+        "word,translation\n漢字,かんじ\n日本,にほん\n"
+    )
+    vm = VocabularyManager(str(tmp_path))
+    assert vm.get_hangul_input("KanjiKana") is False
+
+
+def test_multiple_choice_topic_never_gets_hangul_input(tmp_path):
+    # Even if a top-level (multiple-choice) topic happened to have Hangul
+    # translations, hangul input is only ever computed for spelling/
+    # translation topics.
+    (tmp_path / "Hangul.csv").write_text("word,translation\nhello,안녕\n")
+    vm = VocabularyManager(str(tmp_path))
+    assert vm.get_quiz_type("Hangul") == "multiple_choice"
+    assert vm.get_hangul_input("Hangul") is False
+
+
+def test_get_hangul_input_unknown_topic_defaults_to_false(tmp_path):
+    vm = VocabularyManager(str(tmp_path))
+    assert vm.get_hangul_input("DoesNotExist") is False
+
+
+# ---------------------------------------------------------------------------
 # get_words
 # ---------------------------------------------------------------------------
 
