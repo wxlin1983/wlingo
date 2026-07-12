@@ -4,12 +4,14 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import ResultPage from './ResultPage'
 import { api } from '../lib/api'
-import type { QuizResult } from '../lib/types'
+import type { QuizResult, WordStat } from '../lib/types'
 
 vi.mock('../lib/api', () => ({
   api: {
     result: vi.fn(),
     reset: vi.fn(),
+    start: vi.fn(),
+    wordStats: vi.fn(),
   },
 }))
 
@@ -23,6 +25,8 @@ const RESULT: QuizResult = {
   correct_count: 1,
   total_questions: 2,
   score_percentage: 50,
+  topic: 'English',
+  mode: 'adaptive',
   answers: [
     {
       word: 'hello',
@@ -46,6 +50,8 @@ describe('ResultPage', () => {
     vi.clearAllMocks()
     vi.mocked(api.result).mockResolvedValue(RESULT)
     vi.mocked(api.reset).mockResolvedValue({ status: 'success' })
+    vi.mocked(api.start).mockResolvedValue({ type: 'opaqueredirect' } as Response)
+    vi.mocked(api.wordStats).mockResolvedValue([])
   })
 
   it('shows wrong answers up front with correct ones collapsed, then resets on demand', async () => {
@@ -70,7 +76,7 @@ describe('ResultPage', () => {
     expect(accordion).toHaveAttribute('aria-expanded', 'true')
     expect(await screen.findByText('hello')).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: /start new quiz/i }))
+    await user.click(screen.getByRole('button', { name: /choose different topic/i }))
 
     expect(api.reset).toHaveBeenCalled()
     expect(navigateMock).toHaveBeenCalledWith('/')
@@ -81,6 +87,8 @@ describe('ResultPage', () => {
       correct_count: 0,
       total_questions: 1,
       score_percentage: 0,
+      topic: 'English',
+      mode: 'adaptive',
       answers: [RESULT.answers[1]],
     })
 
@@ -99,6 +107,8 @@ describe('ResultPage', () => {
       correct_count: 1,
       total_questions: 1,
       score_percentage: 100,
+      topic: 'English',
+      mode: 'adaptive',
       answers: [RESULT.answers[0]],
     })
 
@@ -124,5 +134,123 @@ describe('ResultPage', () => {
     await waitFor(() => {
       expect(navigateMock).toHaveBeenCalledWith('/')
     })
+  })
+
+  it('restarts the same quiz topic/mode when the retry button is clicked', async () => {
+    const user = userEvent.setup()
+
+    render(
+      <MemoryRouter>
+        <ResultPage />
+      </MemoryRouter>,
+    )
+
+    await user.click(await screen.findByRole('button', { name: /retry quiz/i }))
+
+    expect(api.start).toHaveBeenCalledWith('English', 'adaptive')
+    expect(navigateMock).toHaveBeenCalledWith('/quiz/0')
+  })
+
+  it('restarts the same quiz when the R key is pressed', async () => {
+    const user = userEvent.setup()
+
+    render(
+      <MemoryRouter>
+        <ResultPage />
+      </MemoryRouter>,
+    )
+
+    await screen.findByText('1 of 2 correct')
+    await user.keyboard('r')
+
+    expect(api.start).toHaveBeenCalledWith('English', 'adaptive')
+    expect(navigateMock).toHaveBeenCalledWith('/quiz/0')
+  })
+
+  it('shows an error instead of navigating when restart fails', async () => {
+    const user = userEvent.setup()
+    vi.mocked(api.start).mockResolvedValue({
+      type: 'default',
+      ok: false,
+      json: () => Promise.resolve({}),
+    } as unknown as Response)
+
+    render(
+      <MemoryRouter>
+        <ResultPage />
+      </MemoryRouter>,
+    )
+
+    await user.click(await screen.findByRole('button', { name: /retry quiz/i }))
+
+    expect(await screen.findByText(/failed to restart quiz/i)).toBeInTheDocument()
+    expect(navigateMock).not.toHaveBeenCalledWith('/quiz/0')
+  })
+
+  it('lazy-loads and renders the word accuracy table, worst first, on toggle', async () => {
+    const user = userEvent.setup()
+    const stats: WordStat[] = [
+      { word: 'worst', correct: 0, total: 4, accuracy_percentage: 0 },
+      { word: 'best', correct: 5, total: 5, accuracy_percentage: 100 },
+    ]
+    vi.mocked(api.wordStats).mockResolvedValue(stats)
+
+    render(
+      <MemoryRouter>
+        <ResultPage />
+      </MemoryRouter>,
+    )
+
+    const toggle = await screen.findByRole('button', { name: /word accuracy/i })
+    expect(api.wordStats).not.toHaveBeenCalled()
+    expect(toggle).toHaveAttribute('aria-expanded', 'false')
+
+    await user.click(toggle)
+
+    expect(api.wordStats).toHaveBeenCalledWith('English')
+    expect(toggle).toHaveAttribute('aria-expanded', 'true')
+
+    const rows = await screen.findAllByRole('row')
+    // rows[0] is the header row
+    expect(rows[1]).toHaveTextContent('worst')
+    expect(rows[1]).toHaveTextContent('0/4')
+    expect(rows[1]).toHaveTextContent('0%')
+    expect(rows[2]).toHaveTextContent('best')
+    expect(rows[2]).toHaveTextContent('100%')
+
+    // Collapsing and reopening must not trigger a second fetch.
+    await user.click(toggle)
+    await user.click(toggle)
+    expect(api.wordStats).toHaveBeenCalledTimes(1)
+  })
+
+  it('shows a message when there is no word history yet', async () => {
+    const user = userEvent.setup()
+    vi.mocked(api.wordStats).mockResolvedValue([])
+
+    render(
+      <MemoryRouter>
+        <ResultPage />
+      </MemoryRouter>,
+    )
+
+    await user.click(await screen.findByRole('button', { name: /word accuracy/i }))
+
+    expect(await screen.findByText(/no history yet/i)).toBeInTheDocument()
+  })
+
+  it('shows an error if word accuracy fails to load', async () => {
+    const user = userEvent.setup()
+    vi.mocked(api.wordStats).mockRejectedValue(new Error('network error'))
+
+    render(
+      <MemoryRouter>
+        <ResultPage />
+      </MemoryRouter>,
+    )
+
+    await user.click(await screen.findByRole('button', { name: /word accuracy/i }))
+
+    expect(await screen.findByText(/failed to load word accuracy/i)).toBeInTheDocument()
   })
 })

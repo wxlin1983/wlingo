@@ -20,6 +20,13 @@ class Topic(TypedDict):
     quiz_type: str
 
 
+class WordStat(TypedDict):
+    word: str
+    correct: int
+    total: int
+    accuracy_percentage: int
+
+
 # --- Models ---
 class Question(BaseModel):
     word: str

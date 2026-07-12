@@ -16,7 +16,7 @@ import wlingo.globals
 from wlingo.app import create_app
 from wlingo.config import settings
 from wlingo.models import Question, SessionData
-from wlingo.routers.api import _update_user_stats
+from wlingo.routers.api import _update_user_stats, _update_word_history
 from wlingo.routers.deps import get_redis, session_key
 
 # ---------------------------------------------------------------------------
@@ -609,6 +609,8 @@ def test_result_api_after_answers(client):
     assert data["correct_count"] == n
     assert data["score_percentage"] == 100
     assert len(data["answers"]) == n
+    assert data["topic"] == "English"
+    assert data["mode"] == "adaptive"
 
 
 def test_result_page_returns_200(client):
@@ -837,6 +839,194 @@ def test_correct_answer_deletes_stats_key_when_last_word(client):
     )
 
     assert not fake_redis.exists(stats_key)
+
+
+# ---------------------------------------------------------------------------
+# All-time word accuracy history (word_history / /api/word_stats)
+# ---------------------------------------------------------------------------
+
+
+def test_update_word_history_survives_concurrent_write(monkeypatch):
+    """Same concurrent-write safety net as _update_user_stats: a writer
+    touching the key between our read and our write must not be lost."""
+    fake_redis = fakeredis.FakeRedis(decode_responses=True)
+    key = "word_history:user1:English"
+    pipe = fake_redis.pipeline()
+    original_multi = pipe.multi
+    calls = {"n": 0}
+
+    def flaky_multi(*args, **kwargs):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            fake_redis.set(key, json.dumps({"interloper": {"correct": 0, "total": 1}}))
+        return original_multi(*args, **kwargs)
+
+    monkeypatch.setattr(pipe, "multi", flaky_multi)
+    monkeypatch.setattr(fake_redis, "pipeline", lambda **kw: pipe)
+
+    _update_word_history(fake_redis, "user1", "English", "hola", is_correct=False)
+
+    assert calls["n"] == 2, "expected exactly one retry after the WatchError"
+    history = json.loads(fake_redis.get(key))
+    assert history == {
+        "interloper": {"correct": 0, "total": 1},
+        "hola": {"correct": 0, "total": 1},
+    }
+
+
+def test_wrong_answer_creates_word_history(client):
+    c, fake_redis = client
+    c.get("/")
+    _start(c, "English")
+
+    session = _session(fake_redis, c)
+    q = session["prepared_questions"][0]
+    wrong_index = next(
+        i for i, opt in enumerate(q["options"]) if opt != q["translation"]
+    )
+    c.post(
+        "/submit_answer",
+        data={"selected_option_index": wrong_index, "current_index": 0},
+    )
+
+    user_id = c.cookies.get("wlingo_user_id")
+    history_key = f"word_history:{user_id}:English"
+    assert fake_redis.exists(history_key)
+    history = json.loads(fake_redis.get(history_key))
+    assert history[q["word"]] == {"correct": 0, "total": 1}
+
+
+def test_random_mode_still_creates_word_history(client):
+    """Unlike user_stats (adaptive-only), word history is tracked in every
+    mode -- it's a display feature, not an adaptive-sampling signal."""
+    c, fake_redis = client
+    c.get("/")
+    _start(c, "English", mode="random")
+
+    session = _session(fake_redis, c)
+    q = session["prepared_questions"][0]
+    wrong_index = next(
+        i for i, opt in enumerate(q["options"]) if opt != q["translation"]
+    )
+    c.post(
+        "/submit_answer",
+        data={"selected_option_index": wrong_index, "current_index": 0},
+    )
+
+    user_id = c.cookies.get("wlingo_user_id")
+    history_key = f"word_history:{user_id}:English"
+    assert fake_redis.exists(history_key)
+
+
+def test_correct_answer_does_not_erase_word_history(client):
+    """Unlike user_stats, a correct answer must not wipe the word's history
+    -- total/correct accumulate across all attempts, forever."""
+    c, fake_redis = client
+    c.get("/")
+    _start(c, "English")
+
+    session = _session(fake_redis, c)
+    q = session["prepared_questions"][0]
+    word = q["word"]
+
+    user_id = c.cookies.get("wlingo_user_id")
+    history_key = f"word_history:{user_id}:English"
+    fake_redis.set(history_key, json.dumps({word: {"correct": 1, "total": 3}}))
+
+    correct_index = q["options"].index(q["translation"])
+    c.post(
+        "/submit_answer",
+        data={"selected_option_index": correct_index, "current_index": 0},
+    )
+
+    history = json.loads(fake_redis.get(history_key))
+    assert history[word] == {"correct": 2, "total": 4}
+
+
+def test_word_stats_endpoint_unknown_topic_returns_400(client):
+    c, _ = client
+    assert c.get("/api/word_stats/NoSuchTopic").status_code == 400
+
+
+def test_word_stats_endpoint_no_user_cookie_returns_empty_list(client):
+    c, _ = client
+    resp = c.get("/api/word_stats/English")
+    assert resp.status_code == 200
+    assert resp.json() == []
+
+
+def test_word_stats_endpoint_no_history_returns_empty_list(client):
+    c, _ = client
+    c.get("/")  # sets user_id cookie, but no history yet
+    resp = c.get("/api/word_stats/English")
+    assert resp.status_code == 200
+    assert resp.json() == []
+
+
+def test_word_stats_endpoint_computes_accuracy_percentage(client):
+    c, fake_redis = client
+    c.get("/")
+    user_id = c.cookies.get("wlingo_user_id")
+    fake_redis.set(
+        f"word_history:{user_id}:English",
+        json.dumps({"hola": {"correct": 1, "total": 2}}),
+    )
+
+    resp = c.get("/api/word_stats/English")
+    assert resp.status_code == 200
+    assert resp.json() == [
+        {"word": "hola", "correct": 1, "total": 2, "accuracy_percentage": 50}
+    ]
+
+
+def test_word_stats_endpoint_sorted_worst_accuracy_first(client):
+    c, fake_redis = client
+    c.get("/")
+    user_id = c.cookies.get("wlingo_user_id")
+    fake_redis.set(
+        f"word_history:{user_id}:English",
+        json.dumps(
+            {
+                "best": {"correct": 5, "total": 5},  # 100%
+                "worst": {"correct": 0, "total": 4},  # 0%
+                "middle": {"correct": 1, "total": 2},  # 50%
+            }
+        ),
+    )
+
+    resp = c.get("/api/word_stats/English")
+    words = [row["word"] for row in resp.json()]
+    assert words == ["worst", "middle", "best"]
+
+
+def test_word_stats_endpoint_tiebreaks_by_more_attempts_first(client):
+    c, fake_redis = client
+    c.get("/")
+    user_id = c.cookies.get("wlingo_user_id")
+    fake_redis.set(
+        f"word_history:{user_id}:English",
+        json.dumps(
+            {
+                "few_attempts": {"correct": 1, "total": 2},  # 50%, 2 attempts
+                "many_attempts": {"correct": 5, "total": 10},  # 50%, 10 attempts
+            }
+        ),
+    )
+
+    resp = c.get("/api/word_stats/English")
+    words = [row["word"] for row in resp.json()]
+    assert words == ["many_attempts", "few_attempts"]
+
+
+def test_word_stats_endpoint_ignores_corrupt_history(client):
+    c, fake_redis = client
+    c.get("/")
+    user_id = c.cookies.get("wlingo_user_id")
+    fake_redis.set(f"word_history:{user_id}:English", "{not json")
+
+    resp = c.get("/api/word_stats/English")
+    assert resp.status_code == 200
+    assert resp.json() == []
 
 
 # ---------------------------------------------------------------------------

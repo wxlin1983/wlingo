@@ -11,7 +11,7 @@ from redis.exceptions import RedisError, WatchError
 
 from ..config import settings
 from ..globals import bump_vocab_version, sync_vocab, vocab_manager
-from ..models import AnswerRecord, SessionData
+from ..models import AnswerRecord, SessionData, WordStat
 from ..quiz import VALID_MODES, RandomQuizGenerator
 from .deps import (
     get_active_session,
@@ -27,6 +27,10 @@ logger = logging.getLogger("wlingo")
 
 def _user_stats_key(user_id: str, topic: str) -> str:
     return f"user_stats:{user_id}:{topic}"
+
+
+def _word_history_key(user_id: str, topic: str) -> str:
+    return f"word_history:{user_id}:{topic}"
 
 
 def _normalize_typed_answer(s: str) -> str:
@@ -233,6 +237,13 @@ def submit_answer(
             redis, user_id, session_data.topic, current_q.word, is_correct
         )
 
+    # All-time per-word accuracy history, regardless of mode -- powers the
+    # "Word Accuracy" table on the result page.
+    if user_id:
+        _update_word_history(
+            redis, user_id, session_data.topic, current_q.word, is_correct
+        )
+
     return record
 
 
@@ -271,6 +282,74 @@ def _update_user_stats(
                 continue
 
 
+def _update_word_history(
+    redis: Redis, user_id: str, topic: str, word: str, is_correct: bool
+) -> None:
+    key = _word_history_key(user_id, topic)
+    with redis.pipeline() as pipe:
+        while True:
+            try:
+                pipe.watch(key)
+                raw = pipe.get(key)
+                try:
+                    history: dict[str, dict[str, int]] = json.loads(raw) if raw else {}
+                except json.JSONDecodeError:
+                    history = {}
+
+                counts = history.setdefault(word, {"correct": 0, "total": 0})
+                counts["total"] += 1
+                if is_correct:
+                    counts["correct"] += 1
+
+                pipe.multi()
+                pipe.set(
+                    key,
+                    json.dumps(history),
+                    ex=timedelta(days=settings.USER_STATS_TTL_DAYS),
+                )
+                pipe.execute()
+                break
+            except WatchError:
+                continue
+
+
+@router.get("/api/word_stats/{topic}")
+def get_word_stats(
+    topic: str,
+    user_id: str | None = Depends(get_user_id),
+    redis: Redis = Depends(get_redis),
+) -> list[WordStat]:
+    if not vocab_manager.get_words(topic):
+        raise HTTPException(status_code=400, detail=f"Unknown topic: {topic!r}")
+    if not user_id:
+        return []
+
+    raw = redis.get(_word_history_key(user_id, topic))
+    if not raw:
+        return []
+    try:
+        history: dict[str, dict[str, int]] = json.loads(raw)
+    except json.JSONDecodeError:
+        return []
+
+    stats: list[WordStat] = [
+        {
+            "word": word,
+            "correct": counts.get("correct", 0),
+            "total": counts.get("total", 0),
+            "accuracy_percentage": round(
+                counts.get("correct", 0) / counts["total"] * 100
+            )
+            if counts.get("total")
+            else 0,
+        }
+        for word, counts in history.items()
+        if counts.get("total", 0) > 0
+    ]
+    stats.sort(key=lambda s: (s["accuracy_percentage"], -s["total"]))
+    return stats
+
+
 @router.get("/api/result")
 def get_result_data(session_data: SessionData | None = Depends(get_active_session)):
     if not session_data:
@@ -282,6 +361,8 @@ def get_result_data(session_data: SessionData | None = Depends(get_active_sessio
         "total_questions": total,
         "score_percentage": score,
         "answers": session_data.answers,
+        "topic": session_data.topic,
+        "mode": session_data.mode,
     }
 
 

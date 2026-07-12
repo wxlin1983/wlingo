@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { api } from '../lib/api'
-import type { QuizResult, AnswerRecord } from '../lib/types'
+import type { QuizResult, AnswerRecord, WordStat } from '../lib/types'
 import ScoreRing from '../components/ScoreRing'
 import PageShell from '../components/PageShell'
 import Spinner from '../components/Spinner'
@@ -40,7 +40,13 @@ function AnswerCard({ ans, delay }: { ans: AnswerRecord; delay: number }) {
 export default function ResultPage() {
   const [result, setResult] = useState<QuizResult | null>(null)
   const [resetting, setResetting] = useState(false)
+  const [restarting, setRestarting] = useState(false)
+  const [restartError, setRestartError] = useState('')
   const [showCorrect, setShowCorrect] = useState(false)
+  const [wordStats, setWordStats] = useState<WordStat[] | null>(null)
+  const [wordStatsLoading, setWordStatsLoading] = useState(false)
+  const [wordStatsError, setWordStatsError] = useState('')
+  const [showWordStats, setShowWordStats] = useState(false)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -60,6 +66,50 @@ export default function ResultPage() {
       navigate('/')
     }
   }
+
+  const handleRestart = useCallback(async () => {
+    if (!result || restarting) return
+    setRestarting(true)
+    setRestartError('')
+    try {
+      const res = await api.start(result.topic, result.mode)
+      if (res.type === 'opaqueredirect' || res.ok) {
+        navigate('/quiz/0')
+      } else {
+        setRestartError('Failed to restart quiz')
+      }
+    } catch {
+      setRestartError('Network error — is the server running?')
+    } finally {
+      setRestarting(false)
+    }
+  }, [result, restarting, navigate])
+
+  async function toggleWordStats() {
+    if (!result) return
+    const next = !showWordStats
+    setShowWordStats(next)
+    if (next && wordStats === null && !wordStatsLoading) {
+      setWordStatsLoading(true)
+      setWordStatsError('')
+      try {
+        setWordStats(await api.wordStats(result.topic))
+      } catch {
+        setWordStatsError('Failed to load word accuracy')
+      } finally {
+        setWordStatsLoading(false)
+      }
+    }
+  }
+
+  // 'R' restarts the same quiz -- the only hotkey on this page today.
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() === 'r') handleRestart()
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [handleRestart])
 
   if (!result) {
     return (
@@ -90,10 +140,94 @@ export default function ResultPage() {
             </p>
           </div>
 
-          <PrimaryButton onClick={handleReset} disabled={resetting}>
-            {resetting ? 'Resetting…' : 'Start New Quiz 🔄'}
+          <PrimaryButton onClick={handleRestart} disabled={restarting || resetting}>
+            {restarting ? 'Starting…' : 'Retry Quiz ↻'}
           </PrimaryButton>
+          <p className="text-center text-xs text-gray-400 mt-2">
+            press <strong>R</strong> to retry
+          </p>
+          {restartError && <p className="text-red-500 text-sm text-center mt-2">{restartError}</p>}
+
+          <button
+            onClick={handleReset}
+            disabled={resetting || restarting}
+            className="w-full mt-4 text-sm text-gray-400 hover:text-gray-600 disabled:opacity-50 transition-colors"
+          >
+            {resetting ? 'Resetting…' : 'Choose Different Topic'}
+          </button>
         </motion.div>
+
+        {/* Word accuracy across every attempt at this topic, worst first */}
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden mb-6">
+          <button
+            onClick={toggleWordStats}
+            aria-expanded={showWordStats}
+            className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors"
+          >
+            <span>📊 Word Accuracy (All-Time)</span>
+            <span
+              aria-hidden="true"
+              className={`text-gray-400 transition-transform duration-200 ${
+                showWordStats ? 'rotate-90' : ''
+              }`}
+            >
+              ▸
+            </span>
+          </button>
+          <AnimatePresence initial={false}>
+            {showWordStats && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <div className="px-4 pb-4">
+                  {wordStatsLoading ? (
+                    <div className="flex justify-center py-4">
+                      <Spinner />
+                    </div>
+                  ) : wordStatsError ? (
+                    <p className="text-red-500 text-sm text-center py-2">{wordStatsError}</p>
+                  ) : wordStats && wordStats.length === 0 ? (
+                    <p className="text-sm text-gray-500 text-center py-2">
+                      No history yet for this topic — keep practicing to build it up.
+                    </p>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="text-left text-gray-400 border-b border-gray-100">
+                            <th className="py-2 font-medium">Word</th>
+                            <th className="py-2 font-medium text-right">Correct/Total</th>
+                            <th className="py-2 font-medium text-right">Accuracy</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {wordStats?.map((stat) => (
+                            <tr key={stat.word} className="border-b border-gray-50 last:border-0">
+                              <td className="py-2 text-gray-800">{stat.word}</td>
+                              <td className="py-2 text-right text-gray-500">
+                                {stat.correct}/{stat.total}
+                              </td>
+                              <td
+                                className={`py-2 text-right font-semibold ${
+                                  stat.accuracy_percentage >= 70 ? 'text-green-600' : 'text-red-600'
+                                }`}
+                              >
+                                {stat.accuracy_percentage}%
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
 
         {/* Answer review — wrong answers first, they're what needs studying */}
         <h2 className="font-semibold text-gray-600 mb-3 px-1">Answer Review</h2>

@@ -41,4 +41,13 @@ export interface QuizResult {
   total_questions: number
   score_percentage: number
   answers: AnswerRecord[]
+  topic: string
+  mode: string
+}
+
+export interface WordStat {
+  word: string
+  correct: number
+  total: number
+  accuracy_percentage: number
 }
